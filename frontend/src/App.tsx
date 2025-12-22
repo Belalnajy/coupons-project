@@ -2,6 +2,7 @@ import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MainLayout } from "./components/layout/MainLayout";
 import Register from "./pages/Register";
+import Signin from "./pages/Signin";
 
 function App() {
   return (
@@ -10,6 +11,8 @@ function App() {
         <Routes>
           <Route element={<MainLayout />}>
             <Route path="/" element={<Register />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/signin" element={<Signin />} />
           </Route>
         </Routes>
       </BrowserRouter>
