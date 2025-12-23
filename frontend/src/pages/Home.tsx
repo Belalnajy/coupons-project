@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { 
-  Clock, 
-  Flame, 
-  TrendingUp, 
-  Grid3x3,
-  Filter,
-} from "lucide-react";
+  FiClock, 
+  FiTrendingUp, 
+  FiGrid, 
+  FiFilter 
+} from "react-icons/fi";
+import { FaFire, FaAmazon } from "react-icons/fa";
 import { DealCard, CouponCard } from "@/components/shared";
 
 // Mock data for deals
@@ -26,7 +26,8 @@ const deals = [
     timePosted: "2h ago",
     timeLeft: "2d 4h",
     verified: true,
-    trending: true
+    trending: true,
+    storeIcon: <FaAmazon className="w-5 h-5 text-white" />
   },
   {
     id: 2,
@@ -39,7 +40,8 @@ const deals = [
     timePosted: "5h ago",
     timeLeft: "1d 19h",
     verified: true,
-    trending: false
+    trending: false,
+    storeIcon: <FaAmazon className="w-5 h-5 text-white" />
   },
   {
     id: 3,
@@ -52,7 +54,8 @@ const deals = [
     timePosted: "1d ago",
     timeLeft: "3d 7h",
     verified: false,
-    trending: false
+    trending: false,
+    storeIcon: <FaAmazon className="w-5 h-5 text-white" />
   }
 ];
 
@@ -65,7 +68,8 @@ const coupons = [
     code: "SAVE20",
     badge: "20% OFF",
     expiresIn: "3 days",
-    usedTimes: "156 times"
+    usedTimes: "156 times",
+    storeIcon: <FaAmazon className="w-5 h-5 text-white" />
   },
   {
     id: 2,
@@ -74,7 +78,8 @@ const coupons = [
     code: "FREESHIP",
     badge: "Free shipping",
     expiresIn: "7 days",
-    usedTimes: "98 times"
+    usedTimes: "98 times",
+    storeIcon: <FaAmazon className="w-5 h-5 text-white" />
   }
 ];
 
@@ -86,7 +91,7 @@ export default function Home() {
       {/* Top Banner Alert */}
       <div className="bg-darker-grey text-white py-2 px-4 text-center text-sm">
         <span className="inline-flex items-center gap-2 text-lg font-semibold">
-          <Flame className="w-4 h-4 text-orange-500" />
+          <FaFire className="w-4 h-4 text-orange-500" />
           Today's Top Deals–Top voted offers right now
         </span>
       </div>
@@ -118,7 +123,7 @@ export default function Home() {
       {/* Info Bar */}
       <div className="text-white py-3 px-4">
         <div className="container mx-auto flex items-center gap-2 bg-grey rounded-md p-2 text-lg">
-          <Clock className="w-4 h-4 text-green" />
+          <FiClock className="w-4 h-4 text-green" />
           Latest: 50+ new deals added today • Popular coupons refreshed hourly
         </div>
       </div>
@@ -130,26 +135,26 @@ export default function Home() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
             <TabsList className=" bg-grey">
               <TabsTrigger value="latest" className="gap-2 text-light-grey data-[state=active]:bg-green data-[state=active]:text-white">
-                <TrendingUp className="w-4 h-4" />
+                <FiTrendingUp className="w-4 h-4" />
                 Latest
               </TabsTrigger>
               <TabsTrigger value="hottest" className="gap-2 text-light-grey data-[state=active]:bg-green data-[state=active]:text-white">
-                <Flame className="w-4 h-4" />
+                <FaFire className="w-4 h-4" />
                 Hottest
               </TabsTrigger>
               <TabsTrigger value="ending" className="gap-2 text-light-grey data-[state=active]:bg-green data-[state=active]:text-white">
-                <Clock className="w-4 h-4" />
+                <FiClock className="w-4 h-4" />
                 Ending Soon
               </TabsTrigger>
               <TabsTrigger value="category" className="gap-2 text-light-grey data-[state=active]:bg-green data-[state=active]:text-white">
-                <Grid3x3 className="w-4 h-4" />
+                <FiGrid className="w-4 h-4" />
                 By Category
               </TabsTrigger>
             </TabsList>
           </Tabs>
 
           <Button variant="outline" className="gap-2 text-light-grey bg-grey">
-            <Filter className="w-4 h-4" />
+            <FiFilter className="w-4 h-4" />
             Filter
           </Button>
         </div>

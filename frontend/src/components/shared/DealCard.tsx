@@ -2,13 +2,9 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  Clock, 
-  Flame, 
-  MessageSquare,
-  Timer
-} from "lucide-react";
+import { FiClock, FiMessageSquare } from "react-icons/fi";
+import { FaFire } from "react-icons/fa";
+import { IoTimerOutline } from "react-icons/io5";
 
 export interface DealProps {
   id: number;
@@ -22,6 +18,7 @@ export interface DealProps {
   timeLeft: string;
   verified: boolean;
   trending: boolean;
+  storeIcon?: React.ReactNode;
 }
 
 interface DealCardProps {
@@ -45,7 +42,7 @@ export function DealCard({ deal }: DealCardProps) {
         </div>
         {deal.trending && (
           <div className="absolute bottom-0 left-0 right-0 bg-orange-600 text-white py-1 px-2 flex flex-row justify-center items-center gap-1">
-            <Flame className="w-3 h-3" />
+            <FaFire className="w-3 h-3" />
             Trending now
           </div>
         )}
@@ -56,7 +53,7 @@ export function DealCard({ deal }: DealCardProps) {
       {/* Deal Content */}
       <div className="px-4 py-3">
         <div className="flex items-center gap-2 mb-2">
-          <Flame className="w-4 h-4 text-red-500" />
+          <FaFire className="w-4 h-4 text-red-500" />
           <span className="text-red-500 font-semibold text-sm">{deal.timeLeft}</span>
         </div>
 
@@ -65,9 +62,7 @@ export function DealCard({ deal }: DealCardProps) {
         </h3>
 
         <div className="flex items-center gap-2 mb-2">
-          <Avatar className="w-5 h-5">
-            <AvatarFallback className="text-[10px]">A</AvatarFallback>
-          </Avatar>
+          {deal.storeIcon}
           <span className="text-light-grey text-sm">{deal.store}</span>
         </div>
 
@@ -79,16 +74,16 @@ export function DealCard({ deal }: DealCardProps) {
         <div className="flex items-center justify-between text-xs text-light-grey mb-3">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <MessageSquare className="w-3 h-3" />
+              <FiMessageSquare className="w-3 h-3" />
               {deal.comments} comments
             </span>
             <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
+              <FiClock className="w-3 h-3" />
               {deal.timePosted}
             </span>
           </div>
           <div className="flex items-center gap-1 text-red-500">
-             <Timer className="w-3 h-3" />
+             <IoTimerOutline className="w-3 h-3" />
              <span>Expires in 5h</span>
           </div>
         </div>
