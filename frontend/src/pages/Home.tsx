@@ -2,21 +2,16 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { 
   Clock, 
   Flame, 
   TrendingUp, 
-  Copy,
   Grid3x3,
   Filter,
-  MessageSquare,
-  Timer,
-  TagIcon,
 } from "lucide-react";
+import { DealCard, CouponCard } from "@/components/shared";
 
 // Mock data for deals
 const deals = [
@@ -165,74 +160,7 @@ export default function Home() {
         {/* Deal Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {deals.map((deal) => (
-            <Card key={deal.id} className="overflow-hidden bg-grey border-0 hover:shadow-lg transition-shadow p-0">
-              {/* Deal Image */}
-              <div className="relative bg-darker-grey aspect-video flex items-center justify-center">
-                <div className="absolute top-2 flex flex-row justify-between w-full h-8 px-2">
-                  <Badge className="bg-red-600 text-white text-sm rounded-md h-full">{deal.discount}</Badge>
-                  {deal.verified && (
-                    <Badge className="bg-blue-600 text-white text-sm rounded-md h-full flex items-center px-4">
-                      Verified
-                    </Badge>
-                  )}
-                </div>
-                {deal.trending && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-orange-600 text-white py-1 px-2 flex flex-row justify-center items-center gap-1">
-                    <Flame className="w-3 h-3" />
-                    Trending now
-                  </div>
-                )}
-                {/* Placeholder for product image */}
-                <span className="text-6xl opacity-50">📱</span>
-              </div>
-
-              {/* Deal Content */}
-              <div className="px-4 py-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Flame className="w-4 h-4 text-red-500" />
-                  <span className="text-red-500 font-semibold text-sm">{deal.timeLeft}</span>
-                </div>
-
-                <h3 className="text-white font-medium mb-1 line-clamp-2">
-                  {deal.title}
-                </h3>
-
-                <div className="flex items-center gap-2 mb-2">
-                  <Avatar className="w-5 h-5">
-                    <AvatarFallback className="text-[10px]">A</AvatarFallback>
-                  </Avatar>
-                  <span className="text-light-grey text-sm">{deal.store}</span>
-                </div>
-
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-green text-2xl font-bold">{deal.price}</span>
-                  <span className="text-light-grey text-sm line-through">{deal.originalPrice}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-light-grey mb-3">
-                  <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1">
-                      <MessageSquare className="w-3 h-3" />
-                      {deal.comments} comments
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {deal.timePosted}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-red-500">
-                     <Timer className="w-3 h-3" />
-                     <span>Expires in 5h</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 mb-1">
-                  <Button className="flex-1 bg-green hover:bg-green/90 cursor-pointer">
-                    Get Deal
-                  </Button>
-                </div>
-              </div>
-            </Card>
+            <DealCard key={deal.id} deal={deal} />
           ))}
         </div>
 
@@ -256,45 +184,7 @@ export default function Home() {
 
           <div className="space-y-4">
             {coupons.map((coupon) => (
-              <Card key={coupon.id} className="bg-grey border-0 p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 flex flex-col gap-4">
-                    <Badge className="w-fit bg-green/20 text-green hover:bg-green/30 rounded-md p-2 border border-green-500">
-                    <TagIcon/>
-                      {coupon.badge}
-                    </Badge>
-                    
-                    <h3 className="text-white font-medium text-lg">{coupon.title}</h3>
-                    
-                    <div className="flex items-center gap-2 text-sm text-light-grey">
-                      <Avatar className="w-5 h-5">
-                        <AvatarFallback className="text-[10px]">A</AvatarFallback>
-                      </Avatar>
-                      <span>{coupon.store}</span>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-sm text-light-grey">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        Expires in {coupon.expiresIn}
-                      </span>
-                      <span>Used {coupon.usedTimes}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="text-right">
-                      <div className="text-green bg-darker-grey font-mono font-bold mb-1 border border-light-grey rounded-md py-2 px-6">
-                        {coupon.code}
-                      </div>
-                    </div>
-                    <Button className="bg-green hover:bg-green/90 gap-2 cursor-pointer">
-                      <Copy className="w-4 h-4" />
-                      Copy code
-                    </Button>
-                  </div>
-                </div>
-              </Card>
+              <CouponCard key={coupon.id} coupon={coupon} />
             ))}
           </div>
         </div>
