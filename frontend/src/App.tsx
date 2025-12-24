@@ -4,6 +4,7 @@ import { MainLayout } from "./components/layout/MainLayout";
 import Home from "./pages/Home";
 import Register from "./pages/Register";
 import Signin from "./pages/Signin";
+import Deals from "./pages/Deals";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<Register />} />
             <Route path="/signin" element={<Signin />} />
+            <Route path="/deals" element={<Deals />} />
           </Route>
         </Routes>
       </BrowserRouter>
