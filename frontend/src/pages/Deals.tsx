@@ -1,33 +1,112 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FiSearch, FiFilter, FiChevronLeft, FiChevronRight, FiChevronDown } from "react-icons/fi";
 import { FaAmazon } from "react-icons/fa";
-import { DealCard, type DealProps } from "@/components/shared/DealCard";
+import { DealCard } from "@/components/shared/DealCard";
+import { getDeals } from "@/lib/api";
+import type { Deal, DealsQueryParams } from "@/lib/types";
 
-// Mock data for deals
-const mockDeals: DealProps[] = Array(6).fill({
-  id: 1,
-  title: "Samsung Galaxy S24 Ultra - 50% Off Limited Time Deal",
-  store: "Amazon",
-  price: "£599",
-  originalPrice: "£1199",
-  discount: "-50%",
-  comments: 42,
-  timePosted: "2h ago",
-  timeLeft: "2d 4h",
-  verified: true,
-  trending: true,
-  storeIcon: <FaAmazon className="w-5 h-5 text-white" />
-}).map((deal, index) => ({ ...deal, id: index + 1 }));
+// Helper to get store icon component from icon identifier
+function getStoreIcon(storeIcon?: string) {
+  switch (storeIcon) {
+    case 'amazon':
+      return <FaAmazon className="w-5 h-5 text-white" />;
+    default:
+      return null;
+  }
+}
+
+// Debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 export default function Deals() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [deals, setDeals] = useState<DealProps[]>([]);
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [sort, setSort] = useState<DealsQueryParams['sort']>('popular');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalDeals, setTotalDeals] = useState(0);
+
+  const debouncedSearch = useDebounce(searchQuery, 300);
+  const DEALS_PER_PAGE = 12;
+
+  // Fetch deals
+  const fetchDeals = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await getDeals({
+        page: currentPage,
+        limit: DEALS_PER_PAGE,
+        sort,
+        search: debouncedSearch,
+      });
+      setDeals(response.data);
+      setTotalPages(response.totalPages);
+      setTotalDeals(response.total);
+    } catch (error) {
+      console.error('Failed to fetch deals:', error);
+      setDeals([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, sort, debouncedSearch]);
+
+  // Fetch on mount and when params change
+  useEffect(() => {
+    fetchDeals();
+  }, [fetchDeals]);
+
+  // Reset to page 1 when search or sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, sort]);
 
   const handleClearFilters = () => {
     setSearchQuery("");
-    setDeals(mockDeals);
+    setSort('popular');
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const maxVisible = 3;
+    
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    const end = Math.min(totalPages, start + maxVisible - 1);
+    
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
   };
 
   return (
@@ -61,13 +140,14 @@ export default function Deals() {
         {/* Stats and Sort */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-light-grey font-medium">
-            Showing {deals.length} {deals.length === 1 ? 'deal' : 'deals'}
+            {isLoading ? 'Loading...' : `Showing ${deals.length} out of ${totalDeals} deals`}
           </p>
           <div className="flex items-center gap-2">
             <span className="text-light-grey text-sm">Sort by:</span>
             <div className="relative">
               <select 
-                defaultValue="popular"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as DealsQueryParams['sort'])}
                 className="appearance-none w-[180px] bg-grey text-light-grey border-none h-10 px-4 pr-10 rounded-md cursor-pointer focus:ring-1 focus:ring-green outline-none"
               >
                 <option value="popular">Most Popular</option>
@@ -81,28 +161,64 @@ export default function Deals() {
         </div>
 
         {/* Deals Content */}
-        {deals.length > 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-grey rounded-lg h-80 animate-pulse" />
+            ))}
+          </div>
+        ) : deals.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
               {deals.map((deal) => (
-                <DealCard key={deal.id} deal={deal} />
+                <DealCard 
+                  key={deal.id} 
+                  deal={{
+                    ...deal,
+                    storeIcon: getStoreIcon(deal.storeIcon)
+                  }} 
+                />
               ))}
             </div>
 
             {/* Pagination */}
-            <div className="flex justify-center items-center gap-2 mt-12 pb-8">
-              <Button variant="outline" className="bg-grey border-none hover:bg-grey/80 p-2">
-                <FiChevronLeft className="w-5 h-5" />
-                <span className="hidden sm:inline ml-1">Previous</span>
-              </Button>
-              <Button className="bg-green hover:bg-green/90 w-10 h-10 p-0">1</Button>
-              <Button variant="outline" className="bg-grey border-none hover:bg-grey/80 w-10 h-10 p-0">2</Button>
-              <Button variant="outline" className="bg-grey border-none hover:bg-grey/80 w-10 h-10 p-0">3</Button>
-              <Button variant="outline" className="bg-grey border-none hover:bg-grey/80 p-2">
-                <span className="hidden sm:inline mr-1">Next</span>
-                <FiChevronRight className="w-5 h-5" />
-              </Button>
-            </div>
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-12 pb-8">
+                <Button 
+                  variant="outline" 
+                  className="bg-grey border-none hover:bg-grey/80 p-2"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <FiChevronLeft className="w-5 h-5" />
+                  <span className="hidden sm:inline ml-1">Previous</span>
+                </Button>
+                
+                {getPageNumbers().map((page) => (
+                  <Button 
+                    key={page}
+                    className={page === currentPage 
+                      ? "bg-green hover:bg-green/90 w-10 h-10 p-0"
+                      : "bg-grey border-none hover:bg-grey/80 w-10 h-10 p-0"
+                    }
+                    variant={page === currentPage ? "default" : "outline"}
+                    onClick={() => handlePageChange(page)}
+                  >
+                    {page}
+                  </Button>
+                ))}
+                
+                <Button 
+                  variant="outline" 
+                  className="bg-grey border-none hover:bg-grey/80 p-2"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <span className="hidden sm:inline mr-1">Next</span>
+                  <FiChevronRight className="w-5 h-5" />
+                </Button>
+              </div>
+            )}
           </>
         ) : (
           /* Empty State */
@@ -116,7 +232,7 @@ export default function Deals() {
             </p>
             <Button 
               onClick={handleClearFilters}
-              className="bg-green hover:bg-green/90 px-8 h-12 font-semibold"
+              className="bg-green hover:bg-green/90 px-8 h-12 font-semibold cursor-pointer"
             >
               Clear all filters
             </Button>
