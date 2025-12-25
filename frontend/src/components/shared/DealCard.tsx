@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { FiClock, FiMessageSquare } from "react-icons/fi";
 import { FaFire } from "react-icons/fa";
 import { IoTimerOutline } from "react-icons/io5";
+import {Separator} from "@/components/ui/separator";
 
 export interface DealProps {
   id: number;
@@ -54,46 +55,46 @@ export function DealCard({ deal }: DealCardProps) {
       {/* Deal Content */}
       <div className="px-4 py-3 flex flex-col grow">
         <div className="grow ">
-        <div className="flex items-center gap-2 mb-2">
-          <FaFire className="w-4 h-4 text-red-500" />
-          <span className="text-red-500 font-semibold text-sm">{deal.timeLeft}</span>
-        </div>
-
-        <Link to={`/deals/${deal.id}`}>
-          <h3 className="text-white font-medium mb-1 line-clamp-2 hover:text-green cursor-pointer">
-            {deal.title}
-          </h3>
-        </Link>
-
-        <div className="flex items-center gap-2 mb-2">
-          {deal.storeIcon}
-          <span className="text-light-grey text-sm">{deal.store}</span>
-        </div>
-
-        <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-green text-2xl font-bold">{deal.price}</span>
-          <span className="text-light-grey text-sm line-through">{deal.originalPrice}</span>
-        </div>
-
-        <div className="flex items-center justify-between text-xs text-light-grey mb-3">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1">
-              <FiMessageSquare className="w-3 h-3" />
-              {deal.comments} comments
-            </span>
-            <span className="flex items-center gap-1">
-              <FiClock className="w-3 h-3" />
-              {deal.timePosted}
-            </span>
+          <div className="flex items-center gap-2 mb-2">
+            <FaFire className="w-4 h-4 text-red-500" />
+            <span className="text-red-500 font-semibold text-sm">{deal.timeLeft}</span>
           </div>
-          <div className="flex items-center gap-1 text-red-500">
-             <IoTimerOutline className="w-3 h-3" />
-             <span>Expires in 5h</span>
+
+          <Link to={`/deals/${deal.id}`}>
+            <h3 className="text-white font-medium mb-1 line-clamp-2 hover:text-green cursor-pointer">
+              {deal.title}
+            </h3>
+          </Link>
+
+          <div className="flex items-center gap-2 mb-2">
+            {deal.storeIcon}
+            <span className="text-light-grey text-sm">{deal.store}</span>
+          </div>
+
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className="text-green text-2xl font-bold">{deal.price}</span>
+            <span className="text-light-grey text-sm line-through">{deal.originalPrice}</span>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-light-grey mb-3">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-1">
+                <FiMessageSquare className="w-3 h-3" />
+                {deal.comments} comments
+              </span>
+              <span className="flex items-center gap-1">
+                <FiClock className="w-3 h-3" />
+                {deal.timePosted}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-red-500">
+              <IoTimerOutline className="w-3 h-3" />
+              <span>Expires in 5h</span>
+            </div>
           </div>
         </div>
 
-        </div>
-
+        <Separator className="my-2 bg-light-grey/20 h-px p-0"/>
         <div className="flex gap-2 mb-1">
           <Link to={`/deals/${deal.id}`} className="flex-1">
             <Button className="w-full bg-green hover:bg-green/90 cursor-pointer">

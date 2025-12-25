@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   FiClock, 
-  FiMessageSquare, 
   FiExternalLink, 
   FiThumbsUp,
   FiThumbsDown,
@@ -18,7 +17,7 @@ import { FaFire, FaAmazon } from "react-icons/fa";
 import { IoTimerOutline } from "react-icons/io5";
 import { getDealById, getDeals } from "@/lib/api";
 import type { Deal } from "@/lib/types";
-import { DealCard } from "@/components/shared/DealCard";
+import { DealCard, CommentSection } from "@/components/shared";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -44,6 +43,13 @@ export default function DealsDetails() {
   const [deal, setDeal] = useState<Deal | null>(null);
   const [relatedDeals, setRelatedDeals] = useState<Deal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -191,8 +197,11 @@ export default function DealsDetails() {
                 <div className="flex-1 bg-white text-green font-mono font-bold text-center py-2 rounded-md border border-light-grey">
                   SUMMER50
                 </div>
-                <Button className="bg-green hover:bg-green/90 gap-2 cursor-pointer h-auto py-2">
-                  <FiCopy /> Copy
+                <Button 
+                  onClick={() => handleCopy("SUMMER50")}
+                  className="bg-green hover:bg-green/90 gap-2 cursor-pointer h-auto py-2 min-w-[100px]"
+                >
+                  <FiCopy /> {isCopied ? "Copied!" : "Copy"}
                 </Button>
               </div>
               <p className="text-[11px] text-light-grey">
@@ -271,53 +280,10 @@ export default function DealsDetails() {
         </div>
 
         {/* Comments Section */}
-        <div className="mt-12 space-y-6">
-          <h2 className="text-2xl font-bold">Comments ({deal.commentsList?.length})</h2>
-          
-          <div className="bg-grey rounded-lg p-4 space-y-4 border border-grey/50">
-            <textarea 
-              className="w-full bg-darker-grey border-none rounded-md p-4 min-h-[100px] text-white resize-none outline-none focus:ring-1 focus:ring-green"
-              placeholder="Share your thoughts about this deal..."
-            ></textarea>
-            <div className="flex justify-end">
-              <Button className="bg-green hover:bg-green/90 gap-2 cursor-pointer">
-                <FiMessageSquare /> Post Comment
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {deal.commentsList?.map(comment => (
-              <div key={comment.id} className="bg-grey rounded-lg p-4 border border-grey/50">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-green flex items-center justify-center font-bold text-lg">
-                    {comment.user.name.substring(0, 2)}
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold">{comment.user.name}</span>
-                      {comment.user.badge && (
-                        <Badge className={`${comment.user.badge.toLowerCase() === 'gold' ? 'bg-gold' : 'bg-silver'} text-[10px] py-0 px-2 h-5 text-black`}>{comment.user.badge}</Badge>
-                      )}
-                      <span className="text-xs text-light-grey">• {comment.time}</span>
-                    </div>
-                    <p className="text-sm text-light-grey leading-relaxed">
-                      {comment.text}
-                    </p>
-                    <div className="flex items-center gap-4 pt-2">
-                      <button className="flex items-center gap-1 text-xs text-light-grey hover:text-white transition-colors cursor-pointer">
-                        <FiThumbsUp /> {comment.likes}
-                      </button>
-                      <button className="text-xs text-light-grey hover:text-white transition-colors cursor-pointer">
-                        Reply
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <CommentSection 
+          comments={deal.commentsList || []} 
+          dealId={deal.id} 
+        />
 
         {/* Similar Deals */}
         <div className="mt-16 space-y-6">

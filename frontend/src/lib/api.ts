@@ -375,3 +375,52 @@ export async function login(data: any): Promise<any> {
   const response = await apiClient.post('/login', data);
   return response.data;
 }
+
+/**
+ * Post a new comment to a deal
+ * NOTE: Set USE_MOCK_DATA to false in this file to switch from mock responses to a real backend API.
+ */
+export async function postComment(dealId: number, text: string): Promise<any> {
+  if (USE_MOCK_DATA) {
+    await mockDelay(600);
+    return {
+      success: true,
+      comment: {
+        id: Math.floor(Math.random() * 10000),
+        user: { name: "You (Guest)", badge: "Silver" },
+        text: text,
+        likes: 0,
+        time: "Just now"
+      }
+    };
+  }
+
+  const response = await apiClient.post(`/deals/${dealId}/comments`, { text });
+  return response.data;
+}
+
+/**
+ * Update an existing comment
+ */
+export async function updateComment(commentId: number, text: string): Promise<any> {
+  if (USE_MOCK_DATA) {
+    await mockDelay(400);
+    return { success: true };
+  }
+
+  const response = await apiClient.patch(`/comments/${commentId}`, { text });
+  return response.data;
+}
+
+/**
+ * Delete a comment
+ */
+export async function deleteComment(commentId: number): Promise<any> {
+  if (USE_MOCK_DATA) {
+    await mockDelay(400);
+    return { success: true };
+  }
+
+  const response = await apiClient.delete(`/comments/${commentId}`);
+  return response.data;
+}
