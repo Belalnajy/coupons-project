@@ -275,7 +275,58 @@ export async function getCoupons(params: CouponsQueryParams = {}): Promise<Pagin
 export async function getDealById(id: number): Promise<Deal | null> {
   if (USE_MOCK_DATA) {
     await mockDelay(200);
-    return MOCK_DEALS.find(deal => deal.id === id) || null;
+    const deal = MOCK_DEALS.find(d => d.id === id) || MOCK_DEALS[0];
+    
+    return {
+      ...deal,
+      description: "Massive 50% discount on the latest Samsung Galaxy S24 Ultra! This is one of the best deals we've seen this year.\n\nThe Samsung Galaxy S24 Ultra features the latest Snapdragon processor, a stunning 6.8\" Dynamic AMOLED display, and an incredible camera system with AI-powered photography features.",
+      whatsIncluded: [
+        "Samsung Galaxy S24 Ultra (256GB)",
+        "Original Samsung Charger",
+        "USB-C Cable",
+        "1 Year Manufacturer Warranty"
+      ],
+      howToGet: "Click the \"Get This Deal\" button above, add to cart, and the discount will be applied automatically at checkout. Stock is limited, so act fast!",
+      category: "Electronics",
+      user: {
+        name: "DealsHunter123",
+        badge: "Gold"
+      },
+      votes: {
+        up: 156,
+        down: 12,
+        temperature: 245
+      },
+      images: [
+        "/placeholder-phone.jpg",
+        "/placeholder-phone.jpg",
+        "/placeholder-phone.jpg",
+        "/placeholder-phone.jpg"
+      ],
+      commentsList: [
+        {
+          id: 1,
+          user: { name: "TechExpert919", badge: "Gold" },
+          text: "Amazing deal! Just ordered mine. The price is unbeatable for this spec.",
+          likes: 24,
+          time: "2 hours ago"
+        },
+        {
+          id: 2,
+          user: { name: "Irainkabin919", badge: "Silver" },
+          text: "Amazing deal! Just ordered mine. The price is unbeatable for this spec.",
+          likes: 24,
+          time: "5 hours ago"
+        },
+        {
+          id: 3,
+          user: { name: "TechExpert919", badge: "Gold" },
+          text: "Amazing deal! Just ordered mine. The price is unbeatable for this spec.",
+          likes: 24,
+          time: "2 hours ago"
+        }
+      ]
+    };
   }
 
   const response = await apiClient.get<Deal>(`/deals/${id}`);
@@ -292,5 +343,84 @@ export async function getCouponById(id: number): Promise<Coupon | null> {
   }
 
   const response = await apiClient.get<Coupon>(`/coupons/${id}`);
+  return response.data;
+}
+
+/**
+ * Register a new user
+ */
+export async function register(data: any): Promise<any> {
+  if (USE_MOCK_DATA) {
+    await mockDelay(500);
+    return { success: true, user: { username: data.username, email: data.email } };
+  }
+
+  const response = await apiClient.post('/register', data);
+  return response.data;
+}
+
+/**
+ * Login a user
+ */
+export async function login(data: any): Promise<any> {
+  if (USE_MOCK_DATA) {
+    await mockDelay(500);
+    if (data.email === 'test@example.com' && data.password === 'password123') {
+      return { success: true, token: 'mock-token', user: { email: data.email } };
+    }
+    // Simulate error for other credentials
+    throw new Error('Invalid email or password');
+  }
+
+  const response = await apiClient.post('/login', data);
+  return response.data;
+}
+
+/**
+ * Post a new comment to a deal
+ * NOTE: Set USE_MOCK_DATA to false in this file to switch from mock responses to a real backend API.
+ */
+export async function postComment(dealId: number, text: string): Promise<any> {
+  if (USE_MOCK_DATA) {
+    await mockDelay(600);
+    return {
+      success: true,
+      comment: {
+        id: Math.floor(Math.random() * 10000),
+        user: { name: "You (Guest)", badge: "Silver" },
+        text: text,
+        likes: 0,
+        time: "Just now"
+      }
+    };
+  }
+
+  const response = await apiClient.post(`/deals/${dealId}/comments`, { text });
+  return response.data;
+}
+
+/**
+ * Update an existing comment
+ */
+export async function updateComment(commentId: number, text: string): Promise<any> {
+  if (USE_MOCK_DATA) {
+    await mockDelay(400);
+    return { success: true };
+  }
+
+  const response = await apiClient.patch(`/comments/${commentId}`, { text });
+  return response.data;
+}
+
+/**
+ * Delete a comment
+ */
+export async function deleteComment(commentId: number): Promise<any> {
+  if (USE_MOCK_DATA) {
+    await mockDelay(400);
+    return { success: true };
+  }
+
+  const response = await apiClient.delete(`/comments/${commentId}`);
   return response.data;
 }

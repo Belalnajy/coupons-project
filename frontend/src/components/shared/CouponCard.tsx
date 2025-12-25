@@ -1,4 +1,4 @@
-import React from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,6 +20,14 @@ interface CouponCardProps {
 }
 
 export function CouponCard({ coupon }: CouponCardProps) {
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(coupon.code);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
   return (
     <Card className="bg-grey border-0 p-6">
       <div className="flex items-center justify-between">
@@ -51,9 +59,12 @@ export function CouponCard({ coupon }: CouponCardProps) {
               {coupon.code}
             </div>
           </div>
-          <Button className="bg-green hover:bg-green/90 gap-2 cursor-pointer">
+          <Button 
+            onClick={handleCopy}
+            className="bg-green hover:bg-green/90 gap-2 cursor-pointer min-w-[120px]"
+          >
             <FiCopy className="w-4 h-4" />
-            Copy code
+            {isCopied ? "Copied!" : "Copy code"}
           </Button>
         </div>
       </div>

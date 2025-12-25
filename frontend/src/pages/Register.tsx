@@ -20,6 +20,7 @@ import {
   FieldLabel,
   FieldError,
 } from "@/components/ui/field";
+import { register } from "@/lib/api";
 
 // Zod validation schema for registration form
 const registerSchema = z
@@ -111,23 +112,12 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/register", {
-        method: "POST",
-        body: JSON.stringify({
-          username: validation.data.username,
-          email: validation.data.email,
-          password: validation.data.password,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const data = await register({
+        username: validation.data.username,
+        email: validation.data.email,
+        password: validation.data.password,
       });
 
-      if (!response.ok) {
-        throw new Error("Registration failed");
-      }
-
-      const data = await response.json();
       console.log("Registration successful:", data);
       
       // Navigate to sign-in page on success
