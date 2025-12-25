@@ -28,7 +28,7 @@ interface DealCardProps {
 
 export function DealCard({ deal }: DealCardProps) {
   return (
-    <Card className="overflow-hidden bg-grey border-0 hover:shadow-lg transition-shadow p-0">
+    <Card className="overflow-hidden flex flex-col bg-grey border-0 hover:shadow-lg transition-shadow p-0">
       {/* Deal Image */}
       <div className="relative bg-darker-grey aspect-video flex items-center justify-center">
         <div className="absolute top-2 flex flex-row justify-between w-full h-8 px-2">
@@ -42,7 +42,7 @@ export function DealCard({ deal }: DealCardProps) {
           )}
         </div>
         {deal.trending && (
-          <div className="absolute bottom-0 left-0 right-0 bg-orange-600 text-white py-1 px-2 flex flex-row justify-center items-center gap-1">
+          <div className="absolute bottom-0 left-0 right-0 bg-orange text-white py-1 px-2 flex flex-row justify-center items-center gap-1">
             <FaFire className="w-3 h-3" />
             Trending now
           </div>
@@ -52,7 +52,8 @@ export function DealCard({ deal }: DealCardProps) {
       </div>
 
       {/* Deal Content */}
-      <div className="px-4 py-3">
+      <div className="px-4 py-3 flex flex-col grow">
+        <div className="grow ">
         <div className="flex items-center gap-2 mb-2">
           <FaFire className="w-4 h-4 text-red-500" />
           <span className="text-red-500 font-semibold text-sm">{deal.timeLeft}</span>
@@ -89,6 +90,8 @@ export function DealCard({ deal }: DealCardProps) {
              <IoTimerOutline className="w-3 h-3" />
              <span>Expires in 5h</span>
           </div>
+        </div>
+
         </div>
 
         <div className="flex gap-2 mb-1">

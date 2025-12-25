@@ -11,6 +11,7 @@
   --color-red: oklch(63.68% 0.208 25.33);
   --color-gold:oklch(82.51% 0.157 76.35);
   --color-silver:oklch(87.30% 0.000 0);
+  --color-orange:oklch(61.56% 0.201 36.35);
 }
 
 /* :root {

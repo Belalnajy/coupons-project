@@ -158,7 +158,7 @@ export default function DealsDetails() {
                   <FiThumbsUp /> Hot {deal.votes?.up}
                 </button>
                 <div className="flex flex-col items-center justify-center px-4 border-x border-background ">
-                  <div className="text-red rounded-full h-20 w-20 border-4 border-red flex flex-col items-center justify-center">
+                  <div className="text-red rounded-full h-20 w-20 border-4 border-red bg-red/30 flex flex-col items-center justify-center">
                     <FaFire className="w-4 h-4" />
                   <span className="font-bold">{deal.votes?.temperature}°</span>
                   </div>
