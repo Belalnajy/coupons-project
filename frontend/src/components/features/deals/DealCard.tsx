@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { FiClock, FiMessageSquare, FiCheckCircle } from 'react-icons/fi';
 import { FaFire } from 'react-icons/fa';
 import { IoTimerOutline } from 'react-icons/io5';
+import { Link } from 'react-router-dom';
 
 export interface DealProps {
   id: number;
@@ -120,9 +121,11 @@ export function DealCard({ deal }: DealCardProps) {
         )}
 
         {/* Get Deal Button */}
-        <Button className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-6 rounded-xl text-lg transition-colors cursor-pointer">
+        <Link
+          to={`/deals/${deal.id}`}
+          className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-6 rounded-xl text-lg transition-colors cursor-pointer">
           Get Deal
-        </Button>
+        </Link>
       </div>
     </Card>
   );
