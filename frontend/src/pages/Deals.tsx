@@ -1,11 +1,18 @@
-import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { FiSearch, FiFilter, FiChevronLeft, FiChevronRight, FiChevronDown } from "react-icons/fi";
-import { FaAmazon } from "react-icons/fa";
-import { DealCard } from "@/components/shared/DealCard";
-import { getDeals } from "@/lib/api";
-import type { Deal, DealsQueryParams } from "@/lib/types";
+import { useState, useEffect, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  FiSearch,
+  FiFilter,
+  FiChevronLeft,
+  FiChevronRight,
+  FiChevronDown,
+} from 'react-icons/fi';
+import { FaAmazon } from 'react-icons/fa';
+import { DealCard } from '@/components/features/deals';
+import { getDeals } from '@/services/api';
+import { useDebounce } from '@/hooks';
+import type { Deal, DealsQueryParams } from '@/lib/types';
 
 // Helper to get store icon component from icon identifier
 function getStoreIcon(storeIcon?: string) {
@@ -17,25 +24,8 @@ function getStoreIcon(storeIcon?: string) {
   }
 }
 
-// Debounce hook
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
 export default function Deals() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [deals, setDeals] = useState<Deal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sort, setSort] = useState<DealsQueryParams['sort']>('popular');
@@ -78,7 +68,7 @@ export default function Deals() {
   }, [debouncedSearch, sort]);
 
   const handleClearFilters = () => {
-    setSearchQuery("");
+    setSearchQuery('');
     setSort('popular');
     setCurrentPage(1);
   };
@@ -94,18 +84,18 @@ export default function Deals() {
   const getPageNumbers = () => {
     const pages: number[] = [];
     const maxVisible = 3;
-    
+
     let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
     const end = Math.min(totalPages, start + maxVisible - 1);
-    
+
     if (end - start + 1 < maxVisible) {
       start = Math.max(1, end - maxVisible + 1);
     }
-    
+
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
-    
+
     return pages;
   };
 
@@ -115,7 +105,9 @@ export default function Deals() {
         {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">All Deals</h1>
-          <p className="text-light-grey">Browse all community-shared deals and discounts</p>
+          <p className="text-light-grey">
+            Browse all community-shared deals and discounts
+          </p>
         </div>
 
         {/* Search and Filter Bar */}
@@ -130,7 +122,9 @@ export default function Deals() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button variant="outline" className="h-12 px-6 bg-darker-grey text-light-grey border-none flex items-center gap-2 hover:bg-darker-grey/80 hover:text-white cursor-pointer">
+            <Button
+              variant="outline"
+              className="h-12 px-6 bg-darker-grey text-light-grey border-none flex items-center gap-2 hover:bg-darker-grey/80 hover:text-white cursor-pointer">
               <FiFilter className="w-5 h-5" />
               Filter
             </Button>
@@ -140,16 +134,19 @@ export default function Deals() {
         {/* Stats and Sort */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-light-grey font-medium">
-            {isLoading ? 'Loading...' : `Showing ${deals.length} out of ${totalDeals} deals`}
+            {isLoading
+              ? 'Loading...'
+              : `Showing ${deals.length} out of ${totalDeals} deals`}
           </p>
           <div className="flex items-center gap-2">
             <span className="text-light-grey text-sm">Sort by:</span>
             <div className="relative">
-              <select 
+              <select
                 value={sort}
-                onChange={(e) => setSort(e.target.value as DealsQueryParams['sort'])}
-                className="appearance-none w-[180px] bg-grey text-light-grey border-none h-10 px-4 pr-10 rounded-md cursor-pointer focus:ring-1 focus:ring-green outline-none"
-              >
+                onChange={(e) =>
+                  setSort(e.target.value as DealsQueryParams['sort'])
+                }
+                className="appearance-none w-[180px] bg-grey text-light-grey border-none h-10 px-4 pr-10 rounded-md cursor-pointer focus:ring-1 focus:ring-green outline-none">
                 <option value="popular">Most Popular</option>
                 <option value="newest">Newest First</option>
                 <option value="hottest">Hottest Deals</option>
@@ -171,12 +168,12 @@ export default function Deals() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
               {deals.map((deal) => (
-                <DealCard 
-                  key={deal.id} 
+                <DealCard
+                  key={deal.id}
                   deal={{
                     ...deal,
-                    storeIcon: getStoreIcon(deal.storeIcon)
-                  }} 
+                    storeIcon: getStoreIcon(deal.storeIcon),
+                  }}
                 />
               ))}
             </div>
@@ -184,36 +181,34 @@ export default function Deals() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-2 mt-12 pb-8">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="bg-grey border-none hover:bg-grey/80 p-2"
                   onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
+                  disabled={currentPage === 1}>
                   <FiChevronLeft className="w-5 h-5" />
                   <span className="hidden sm:inline ml-1">Previous</span>
                 </Button>
-                
+
                 {getPageNumbers().map((page) => (
-                  <Button 
+                  <Button
                     key={page}
-                    className={page === currentPage 
-                      ? "bg-green hover:bg-green/90 w-10 h-10 p-0"
-                      : "bg-grey border-none hover:bg-grey/80 w-10 h-10 p-0"
+                    className={
+                      page === currentPage
+                        ? 'bg-green hover:bg-green/90 w-10 h-10 p-0'
+                        : 'bg-grey border-none hover:bg-grey/80 w-10 h-10 p-0'
                     }
-                    variant={page === currentPage ? "default" : "outline"}
-                    onClick={() => handlePageChange(page)}
-                  >
+                    variant={page === currentPage ? 'default' : 'outline'}
+                    onClick={() => handlePageChange(page)}>
                     {page}
                   </Button>
                 ))}
-                
-                <Button 
-                  variant="outline" 
+
+                <Button
+                  variant="outline"
                   className="bg-grey border-none hover:bg-grey/80 p-2"
                   onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
+                  disabled={currentPage === totalPages}>
                   <span className="hidden sm:inline mr-1">Next</span>
                   <FiChevronRight className="w-5 h-5" />
                 </Button>
@@ -228,12 +223,12 @@ export default function Deals() {
             </div>
             <h3 className="text-2xl font-bold mb-2">No deals found</h3>
             <p className="text-light-grey max-w-md mb-8">
-              We couldn't find any deals matching your criteria. Try adjusting your filters or search terms.
+              We couldn't find any deals matching your criteria. Try adjusting
+              your filters or search terms.
             </p>
-            <Button 
+            <Button
               onClick={handleClearFilters}
-              className="bg-green hover:bg-green/90 px-8 h-12 font-semibold cursor-pointer"
-            >
+              className="bg-green hover:bg-green/90 px-8 h-12 font-semibold cursor-pointer">
               Clear all filters
             </Button>
           </div>

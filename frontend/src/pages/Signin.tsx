@@ -1,9 +1,10 @@
-import Snowfall from "react-snowfall";
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import Snowfall from 'react-snowfall';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Card,
   CardContent,
@@ -11,25 +12,24 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Field,
   FieldGroup,
   FieldLabel,
   FieldError,
-} from "@/components/ui/field";
-import { login } from "@/lib/api";
+} from '@/components/ui/field';
 
 // Zod validation schema for sign-in form
 const signinSchema = z.object({
   email: z
     .string()
-    .min(1, "Email is required")
-    .email("Please enter a valid email address"),
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address'),
   password: z
     .string()
-    .min(1, "Password is required")
-    .min(6, "Password must be at least 6 characters"),
+    .min(1, 'Password is required')
+    .min(6, 'Password must be at least 6 characters'),
 });
 
 type SigninFormData = z.infer<typeof signinSchema>;
@@ -39,6 +39,7 @@ export default function Signin() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [errors, setErrors] = React.useState<FormErrors>({});
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   // Validate individual field on blur
   const handleBlur = (fieldName: keyof SigninFormData, value: string) => {
@@ -67,8 +68,8 @@ export default function Signin() {
 
     const formData = new FormData(e.currentTarget);
     const formValues = {
-      email: formData.get("email") as string,
-      password: formData.get("password") as string,
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
     };
 
     // Validate form data with Zod
@@ -89,23 +90,24 @@ export default function Signin() {
     setIsLoading(true);
 
     try {
-      const data = await login(validation.data);
-      console.log("Login successful:", data);
-      
-      // Store token if returned
-      if (data.token) {
-        localStorage.setItem('authToken', data.token);
-      }
-      
-      // Navigate to home page on success
-      navigate("/");
+      // For demonstration, we allow any login to pass as a 'user'
+      await login('user');
+      console.log('Login successful');
+      navigate('/dashboard');
     } catch (error) {
-      console.error("Login error:", error);
-      setErrors({ email: error instanceof Error ? error.message : "Invalid email or password" });
+      console.error('Login error:', error);
+      setErrors({ email: 'Invalid email or password' });
     } finally {
       setIsLoading(false);
     }
   }
+
+  const handleMockLogin = async (role: 'user' | 'admin') => {
+    setIsLoading(true);
+    await login(role);
+    navigate(role === 'admin' ? '/admin' : '/dashboard');
+    setIsLoading(false);
+  };
 
   return (
     <>
@@ -120,20 +122,43 @@ export default function Signin() {
               Login to share deals and save your favorites
             </CardDescription>
             <div className="flex flex-row gap-2 mt-4">
-              <Button 
+              <Button
                 type="button"
                 className="flex-1 bg-green cursor-pointer"
-                onClick={() => navigate("/signin")}
-              >
+                onClick={() => navigate('/signin')}>
                 Log In
               </Button>
-              <Button 
+              <Button
                 type="button"
                 className="flex-1 bg-darker-grey cursor-pointer"
-                onClick={() => navigate("/register")}
-              >
+                onClick={() => navigate('/register')}>
                 Register
               </Button>
+            </div>
+
+            {/* Quick Login for Mocking */}
+            <div className="pt-4 space-y-2">
+              <p className="text-xs text-center text-light-grey mb-2 uppercase tracking-widest font-bold">
+                Quick Login (Mock)
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 border-[#49b99f] text-[#49b99f] hover:bg-[#49b99f] hover:text-white cursor-pointer"
+                  onClick={() => handleMockLogin('user')}
+                  disabled={isLoading}>
+                  User
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 border-[#49b99f] text-[#49b99f] hover:bg-[#49b99f] hover:text-white cursor-pointer"
+                  onClick={() => handleMockLogin('admin')}
+                  disabled={isLoading}>
+                  Admin
+                </Button>
+              </div>
             </div>
           </CardHeader>
 
@@ -148,12 +173,10 @@ export default function Signin() {
                     type="email"
                     placeholder="m@example.com"
                     className="bg-darker-grey border-0"
-                    onBlur={(e) => handleBlur("email", e.target.value)}
+                    onBlur={(e) => handleBlur('email', e.target.value)}
                     aria-invalid={!!errors.email}
                   />
-                  {errors.email && (
-                    <FieldError>{errors.email}</FieldError>
-                  )}
+                  {errors.email && <FieldError>{errors.email}</FieldError>}
                 </Field>
 
                 <Field>
@@ -163,14 +186,16 @@ export default function Signin() {
                     name="password"
                     type="password"
                     className="bg-darker-grey border-0"
-                    onBlur={(e) => handleBlur("password", e.target.value)}
+                    onBlur={(e) => handleBlur('password', e.target.value)}
                     aria-invalid={!!errors.password}
                   />
                   {errors.password && (
                     <FieldError>{errors.password}</FieldError>
                   )}
                 </Field>
-                <Link to="/forgot-password" className="text-right text-sm text-green">
+                <Link
+                  to="/forgot-password"
+                  className="text-right text-sm text-green">
                   Forgot Password?
                 </Link>
               </FieldGroup>
@@ -179,12 +204,11 @@ export default function Signin() {
               <Button
                 type="submit"
                 className="w-full bg-green hover:bg-primary/90 cursor-pointer"
-                disabled={isLoading}
-              >
-                {isLoading ? "Logging in..." : "Log In"}
+                disabled={isLoading}>
+                {isLoading ? 'Logging in...' : 'Log In'}
               </Button>
               <p className="text-center text-sm text-light-grey">
-                Don't have an account?{" "}
+                Don't have an account?{' '}
                 <Link to="/register" className="text-green hover:underline">
                   Sign Up
                 </Link>
@@ -193,7 +217,7 @@ export default function Signin() {
           </form>
         </Card>
         <div className="max-w-md text-center">
-          <p className="text-sm text-light-grey">
+          <p className="text-sm text-light-grey mt-4">
             By continuing, you agree to share deals responsibly and follow our
             community guidelines.
           </p>

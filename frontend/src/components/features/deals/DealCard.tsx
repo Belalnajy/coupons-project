@@ -1,0 +1,129 @@
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { FiClock, FiMessageSquare, FiCheckCircle } from 'react-icons/fi';
+import { FaFire } from 'react-icons/fa';
+import { IoTimerOutline } from 'react-icons/io5';
+
+export interface DealProps {
+  id: number;
+  title: string;
+  store: string;
+  price: string;
+  originalPrice: string;
+  discount: string;
+  comments: number;
+  timePosted: string;
+  timeLeft: string;
+  verified: boolean;
+  trending: boolean;
+  postedBy?: string;
+  heatScore?: number;
+  storeIcon?: React.ReactNode;
+  imageUrl?: string;
+}
+
+interface DealCardProps {
+  deal: DealProps;
+}
+
+export function DealCard({ deal }: DealCardProps) {
+  return (
+    <Card className="overflow-hidden bg-[#2a2a2a] border-0 hover:shadow-xl transition-all duration-300 p-0 rounded-2xl">
+      {/* Deal Image */}
+      <div className="relative bg-[#1a1a1a] aspect-video flex items-center justify-center overflow-hidden">
+        {/* Discount Badge - Top Left */}
+        <Badge className="absolute top-3 left-3 bg-red-600 text-white text-base font-bold rounded-lg px-3 py-1.5 z-10">
+          {deal.discount}
+        </Badge>
+
+        {/* Verified Badge - Top Right */}
+        {deal.verified && (
+          <Badge className="absolute top-3 right-3 bg-blue-500 text-white text-sm font-medium rounded-lg px-3 py-1.5 flex items-center gap-1.5 z-10">
+            <FiCheckCircle className="w-4 h-4" />
+            Verified
+          </Badge>
+        )}
+
+        {/* Trending Banner - Bottom */}
+        {deal.trending && (
+          <div className="absolute bottom-0 left-0 right-0 bg-orange-500 text-white py-2 px-4 flex flex-row justify-center items-center gap-2 font-semibold text-sm">
+            <FaFire className="w-4 h-4" />
+            Trending now
+          </div>
+        )}
+
+        {/* Product Image or Placeholder */}
+        <img
+          src={deal.imageUrl || '/product-placeholder.png'}
+          alt={deal.title}
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      {/* Deal Content */}
+      <div className="px-5 py-4">
+        {/* Heat Score Badge */}
+        <div className="mb-3">
+          <div className="inline-flex items-center gap-2 bg-transparent border-2 border-red-500 text-red-500 rounded-xl px-3 py-1.5">
+            <FaFire className="w-4 h-4" />
+            <span className="font-bold text-lg">{deal.heatScore || 245}°</span>
+          </div>
+        </div>
+
+        {/* Title */}
+        <h3 className="text-white font-semibold text-lg mb-3 line-clamp-2 leading-tight">
+          {deal.title}
+        </h3>
+
+        {/* Store */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden">
+            {deal.storeIcon || <span className="text-sm">🏪</span>}
+          </div>
+          <span className="text-gray-400 text-sm">{deal.store}</span>
+        </div>
+
+        {/* Price */}
+        <div className="flex items-baseline gap-3 mb-4">
+          <span className="text-red-500 text-3xl font-bold">{deal.price}</span>
+          <span className="text-gray-500 text-lg line-through">
+            {deal.originalPrice}
+          </span>
+        </div>
+
+        {/* Meta Info */}
+        <div className="flex items-center justify-between text-sm text-gray-400 mb-3">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5">
+              <FiMessageSquare className="w-4 h-4" />
+              {deal.comments} comments
+            </span>
+            <span className="flex items-center gap-1.5">
+              <FiClock className="w-4 h-4" />
+              {deal.timePosted}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-orange-400">
+            <IoTimerOutline className="w-4 h-4" />
+            <span>Expires in {deal.timeLeft}</span>
+          </div>
+        </div>
+
+        {/* Posted By */}
+        {deal.postedBy && (
+          <div className="text-sm text-gray-400 mb-4">
+            Posted by{' '}
+            <span className="text-white font-medium">{deal.postedBy}</span>
+          </div>
+        )}
+
+        {/* Get Deal Button */}
+        <Button className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-6 rounded-xl text-lg transition-colors cursor-pointer">
+          Get Deal
+        </Button>
+      </div>
+    </Card>
+  );
+}
