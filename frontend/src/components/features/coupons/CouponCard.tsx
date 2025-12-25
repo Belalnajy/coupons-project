@@ -1,16 +1,8 @@
-<<<<<<< HEAD:frontend/src/components/shared/CouponCard.tsx
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { FiClock, FiCopy, FiTag } from "react-icons/fi";
-=======
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FiClock, FiCopy, FiTag } from 'react-icons/fi';
->>>>>>> 133cdce (feat: Introduce admin and dashboard modules, new layouts, structured API services, and replace old shared components and API utilities.):frontend/src/components/features/coupons/CouponCard.tsx
 
 export interface CouponProps {
   id: number;
@@ -67,12 +59,11 @@ export function CouponCard({ coupon }: CouponCardProps) {
               {coupon.code}
             </div>
           </div>
-          <Button 
+          <Button
             onClick={handleCopy}
-            className="bg-green hover:bg-green/90 gap-2 cursor-pointer min-w-[120px]"
-          >
+            className="bg-green hover:bg-green/90 gap-2 cursor-pointer min-w-[120px]">
             <FiCopy className="w-4 h-4" />
-            {isCopied ? "Copied!" : "Copy code"}
+            {isCopied ? 'Copied!' : 'Copy code'}
           </Button>
         </div>
       </div>

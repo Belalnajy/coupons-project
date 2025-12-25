@@ -14,6 +14,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (role: UserRole) => Promise<void>;
+  register: (data: any) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -54,6 +55,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsLoading(false);
   };
 
+  const register = async (data: any) => {
+    setIsLoading(true);
+    // Mocking API delay
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    console.log('Mock registration successful:', data);
+    setIsLoading(false);
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('waferlee_user');
@@ -61,7 +70,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, login, logout, isLoading }}>
+      value={{
+        user,
+        isAuthenticated: !!user,
+        login,
+        register,
+        logout,
+        isLoading,
+      }}>
       {children}
     </AuthContext.Provider>
   );

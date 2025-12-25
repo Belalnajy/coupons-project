@@ -1,11 +1,11 @@
-import Snowfall from "react-snowfall";
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import Snowfall from 'react-snowfall';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Card,
   CardContent,
@@ -13,42 +13,46 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Field,
   FieldGroup,
   FieldLabel,
   FieldError,
-} from "@/components/ui/field";
-import { register } from "@/lib/api";
+} from '@/components/ui/field';
+import { useAuth } from '@/context/AuthContext';
 
 // Zod validation schema for registration form
 const registerSchema = z
   .object({
     username: z
       .string()
-      .min(1, "Username is required")
-      .min(3, "Username must be at least 3 characters")
-      .max(20, "Username must not exceed 20 characters")
-      .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
+      .min(1, 'Username is required')
+      .min(3, 'Username must be at least 3 characters')
+      .max(20, 'Username must not exceed 20 characters')
+      .regex(
+        /^[a-zA-Z0-9_]+$/,
+        'Username can only contain letters, numbers, and underscores'
+      ),
     email: z
       .string()
-      .min(1, "Email is required")
-      .email("Please enter a valid email address"),
+      .min(1, 'Email is required')
+      .email('Please enter a valid email address'),
     password: z
       .string()
-      .min(1, "Password is required")
-      .min(6, "Password must be at least 6 characters"),
-    confirmPassword: z
-      .string()
-      .min(1, "Please confirm your password"),
+      .min(1, 'Password is required')
+      .min(6, 'Password must be at least 6 characters'),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
     terms: z
       .boolean()
-      .refine((val) => val === true, "You must accept the terms and conditions"),
+      .refine(
+        (val) => val === true,
+        'You must accept the terms and conditions'
+      ),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
   });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -59,9 +63,13 @@ export default function Register() {
   const [errors, setErrors] = React.useState<FormErrors>({});
   const [termsAccepted, setTermsAccepted] = React.useState(false);
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   // Validate individual field on blur
-  const handleBlur = (fieldName: keyof Omit<RegisterFormData, "terms" | "confirmPassword">, value: string) => {
+  const handleBlur = (
+    fieldName: keyof Omit<RegisterFormData, 'terms' | 'confirmPassword'>,
+    value: string
+  ) => {
     try {
       const fieldSchema = registerSchema.shape[fieldName];
       fieldSchema.parse(value);
@@ -87,10 +95,10 @@ export default function Register() {
 
     const formData = new FormData(e.currentTarget);
     const formValues = {
-      username: formData.get("username") as string,
-      email: formData.get("email") as string,
-      password: formData.get("password") as string,
-      confirmPassword: formData.get("confirmPassword") as string,
+      username: formData.get('username') as string,
+      email: formData.get('email') as string,
+      password: formData.get('password') as string,
+      confirmPassword: formData.get('confirmPassword') as string,
       terms: termsAccepted,
     };
 
@@ -118,13 +126,13 @@ export default function Register() {
         password: validation.data.password,
       });
 
-      console.log("Registration successful:", data);
-      
+      console.log('Registration successful:', data);
+
       // Navigate to sign-in page on success
-      navigate("/signin");
+      navigate('/signin');
     } catch (error) {
-      console.error("Registration error:", error);
-      setErrors({ email: "Registration failed. Please try again." });
+      console.error('Registration error:', error);
+      setErrors({ email: 'Registration failed. Please try again.' });
     } finally {
       setIsLoading(false);
     }
@@ -143,18 +151,16 @@ export default function Register() {
               Create an account to start sharing deals
             </CardDescription>
             <div className="flex flex-row gap-2 mt-4">
-              <Button 
+              <Button
                 type="button"
                 className="flex-1 bg-darker-grey cursor-pointer"
-                onClick={() => navigate("/signin")}
-              >
+                onClick={() => navigate('/signin')}>
                 Log In
               </Button>
-              <Button 
+              <Button
                 type="button"
                 className="flex-1 bg-green cursor-pointer"
-                onClick={() => navigate("/register")}
-              >
+                onClick={() => navigate('/register')}>
                 Register
               </Button>
             </div>
@@ -170,7 +176,7 @@ export default function Register() {
                     name="username"
                     placeholder="Enter your username"
                     className="bg-darker-grey border-0"
-                    onBlur={(e) => handleBlur("username", e.target.value)}
+                    onBlur={(e) => handleBlur('username', e.target.value)}
                     aria-invalid={!!errors.username}
                   />
                   {errors.username && (
@@ -186,12 +192,10 @@ export default function Register() {
                     type="email"
                     placeholder="m@example.com"
                     className="bg-darker-grey border-0"
-                    onBlur={(e) => handleBlur("email", e.target.value)}
+                    onBlur={(e) => handleBlur('email', e.target.value)}
                     aria-invalid={!!errors.email}
                   />
-                  {errors.email && (
-                    <FieldError>{errors.email}</FieldError>
-                  )}
+                  {errors.email && <FieldError>{errors.email}</FieldError>}
                 </Field>
 
                 <Field>
@@ -201,7 +205,7 @@ export default function Register() {
                     name="password"
                     type="password"
                     className="bg-darker-grey border-0"
-                    onBlur={(e) => handleBlur("password", e.target.value)}
+                    onBlur={(e) => handleBlur('password', e.target.value)}
                     aria-invalid={!!errors.password}
                   />
                   {errors.password && (
@@ -226,7 +230,7 @@ export default function Register() {
                 </Field>
 
                 <div className="flex items-center space-x-2 pt-2">
-                  <Checkbox 
+                  <Checkbox
                     id="terms"
                     checked={termsAccepted}
                     onCheckedChange={(checked) => {
@@ -242,33 +246,29 @@ export default function Register() {
                   />
                   <Label
                     htmlFor="terms"
-                    className="text-sm font-medium leading-none cursor-pointer"
-                  >
-                    I agree to the{" "}
+                    className="text-sm font-medium leading-none cursor-pointer">
+                    I agree to the{' '}
                     <a href="#" className="text-green hover:underline">
                       Terms of Service
-                    </a>{" "}
-                    and{" "}
+                    </a>{' '}
+                    and{' '}
                     <a href="#" className="text-green hover:underline">
                       Privacy Policy
                     </a>
                   </Label>
                 </div>
-                {errors.terms && (
-                  <FieldError>{errors.terms}</FieldError>
-                )}
+                {errors.terms && <FieldError>{errors.terms}</FieldError>}
               </FieldGroup>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button
                 type="submit"
                 className="w-full bg-green hover:bg-primary/90 cursor-pointer"
-                disabled={isLoading}
-              >
-                {isLoading ? "Creating account..." : "Sign up"}
+                disabled={isLoading}>
+                {isLoading ? 'Creating account...' : 'Sign up'}
               </Button>
               <p className="text-center text-sm text-light-grey">
-                Already have an account?{" "}
+                Already have an account?{' '}
                 <Link to="/signin" className="text-green hover:underline">
                   Log in
                 </Link>

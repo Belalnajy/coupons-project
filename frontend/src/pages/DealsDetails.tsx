@@ -1,23 +1,24 @@
-import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { 
-  FiClock, 
-  FiExternalLink, 
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  FiClock,
+  FiExternalLink,
   FiThumbsUp,
   FiThumbsDown,
   FiCopy,
   FiFacebook,
   FiTwitter,
   FiLink,
-  FiGrid
-} from "react-icons/fi";
-import { FaFire, FaAmazon } from "react-icons/fa";
-import { IoTimerOutline } from "react-icons/io5";
-import { getDealById, getDeals } from "@/lib/api";
-import type { Deal } from "@/lib/types";
-import { DealCard, CommentSection } from "@/components/shared";
+  FiGrid,
+} from 'react-icons/fi';
+import { FaFire, FaAmazon } from 'react-icons/fa';
+import { IoTimerOutline } from 'react-icons/io5';
+import { getDealById, getDeals } from '@/services/api';
+import type { Deal } from '@/lib/types';
+import { DealCard } from '@/components/features/deals';
+import { CommentSection } from '@/components/features/coupons';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -25,8 +26,8 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import {Separator} from "@/components/ui/separator";
+} from '@/components/ui/breadcrumb';
+import { Separator } from '@/components/ui/separator';
 
 // Helper to get store icon
 function getStoreIcon(storeIcon?: string) {
@@ -58,12 +59,12 @@ export default function DealsDetails() {
         if (id) {
           const dealData = await getDealById(parseInt(id));
           setDeal(dealData);
-          
+
           const related = await getDeals({ limit: 4 });
           setRelatedDeals(related.data);
         }
       } catch (error) {
-        console.error("Failed to fetch deal details:", error);
+        console.error('Failed to fetch deal details:', error);
       } finally {
         setIsLoading(false);
       }
@@ -100,13 +101,17 @@ export default function DealsDetails() {
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink asChild className="text-white hover:text-green transition-colors">
+              <BreadcrumbLink
+                asChild
+                className="text-white hover:text-green transition-colors">
                 <Link to="/">Home</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink asChild className="text-white hover:text-green transition-colors">
+              <BreadcrumbLink
+                asChild
+                className="text-white hover:text-green transition-colors">
                 <Link to="/deals">{deal.category || 'Deals'}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
@@ -128,7 +133,9 @@ export default function DealsDetails() {
             </div>
             <div className="grid grid-cols-4 gap-3">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-darker-grey aspect-square rounded-md border border-grey flex items-center justify-center opacity-50 hover:opacity-100 cursor-pointer transition-opacity">
+                <div
+                  key={i}
+                  className="bg-darker-grey aspect-square rounded-md border border-grey flex items-center justify-center opacity-50 hover:opacity-100 cursor-pointer transition-opacity">
                   <span className="text-xl">📱</span>
                 </div>
               ))}
@@ -144,14 +151,16 @@ export default function DealsDetails() {
               <h1 className="text-2xl md:text-3xl font-bold mb-2">
                 {deal.title}
               </h1>
-              
+
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-grey flex items-center justify-center">
                   {getStoreIcon(deal.storeIcon)}
                 </div>
                 <div className="text-sm">
                   <div className="text-light-grey">{deal.store}</div>
-                  <Link to="#" className="text-green hover:underline text-xs">View all deals from this store →</Link>
+                  <Link to="#" className="text-green hover:underline text-xs">
+                    View all deals from this store →
+                  </Link>
                 </div>
               </div>
             </div>
@@ -166,9 +175,13 @@ export default function DealsDetails() {
                 <div className="flex flex-col items-center justify-center px-4 border-x border-background ">
                   <div className="text-red rounded-full h-20 w-20 border-4 border-red bg-red/30 flex flex-col items-center justify-center">
                     <FaFire className="w-4 h-4" />
-                  <span className="font-bold">{deal.votes?.temperature}°</span>
+                    <span className="font-bold">
+                      {deal.votes?.temperature}°
+                    </span>
                   </div>
-                  <span className="text-[10px] text-light-grey">{deal.votes?.up! + deal.votes?.down!} votes</span>
+                  <span className="text-[10px] text-light-grey">
+                    {deal.votes?.up! + deal.votes?.down!} votes
+                  </span>
                 </div>
                 <button className="flex items-center justify-center gap-2 px-6 py-2 w-1/4 bg-blue-600 text-white cursor-pointer rounded-md">
                   <FiThumbsDown /> Cold {deal.votes?.down}
@@ -180,11 +193,19 @@ export default function DealsDetails() {
             <Separator />
             <div className="space-y-2">
               <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-bold text-green">{deal.price}</span>
-                <span className="text-xl text-light-grey line-through">{deal.originalPrice}</span>
+                <span className="text-4xl font-bold text-green">
+                  {deal.price}
+                </span>
+                <span className="text-xl text-light-grey line-through">
+                  {deal.originalPrice}
+                </span>
               </div>
               <Badge className="bg-green/10 text-green border-green rounded-md px-2">
-                You save {deal.originalPrice.replace('£', '') === '1199' ? '£600' : '30%'} ({deal.discount})
+                You save{' '}
+                {deal.originalPrice.replace('£', '') === '1199'
+                  ? '£600'
+                  : '30%'}{' '}
+                ({deal.discount})
               </Badge>
             </div>
 
@@ -197,11 +218,10 @@ export default function DealsDetails() {
                 <div className="flex-1 bg-white text-green font-mono font-bold text-center py-2 rounded-md border border-light-grey">
                   SUMMER50
                 </div>
-                <Button 
-                  onClick={() => handleCopy("SUMMER50")}
-                  className="bg-green hover:bg-green/90 gap-2 cursor-pointer h-auto py-2 min-w-[100px]"
-                >
-                  <FiCopy /> {isCopied ? "Copied!" : "Copy"}
+                <Button
+                  onClick={() => handleCopy('SUMMER50')}
+                  className="bg-green hover:bg-green/90 gap-2 cursor-pointer h-auto py-2 min-w-[100px]">
+                  <FiCopy /> {isCopied ? 'Copied!' : 'Copy'}
                 </Button>
               </div>
               <p className="text-[11px] text-light-grey">
@@ -212,7 +232,10 @@ export default function DealsDetails() {
             {/* Metadata */}
             <div className="flex flex-col gap-4 text-sm text-light-grey">
               <div className="flex items-center gap-2">
-                <FiClock /> Posted 2 hours ago by <span className="text-green cursor-pointer">{deal.user?.name}</span>
+                <FiClock /> Posted 2 hours ago by{' '}
+                <span className="text-green cursor-pointer">
+                  {deal.user?.name}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-red-500">
                 <IoTimerOutline /> Expires in 5 hours
@@ -231,19 +254,33 @@ export default function DealsDetails() {
               <div className="flex items-center gap-2">
                 <span className="text-lg font-medium">Share:</span>
                 <div className="flex gap-2">
-                  <Button size="icon" variant="outline" className="w-8 h-8 rounded-full bg-grey border-none cursor-pointer">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="w-8 h-8 rounded-full bg-grey border-none cursor-pointer">
                     <FiFacebook className="w-4 h-4" />
                   </Button>
-                  <Button size="icon" variant="outline" className="w-8 h-8 rounded-full bg-grey border-none cursor-pointer">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="w-8 h-8 rounded-full bg-grey border-none cursor-pointer">
                     <FiTwitter className="w-4 h-4" />
                   </Button>
-                  <Button size="icon" variant="outline" className="w-8 h-8 rounded-full bg-grey border-none cursor-pointer">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="w-8 h-8 rounded-full bg-grey border-none cursor-pointer">
                     <FiLink className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
-              <Button asChild className="flex-1 bg-green hover:bg-green/90 py-6 text-lg font-bold gap-3 cursor-pointer">
-                <a href="https://www.amazon.com" target="_blank" rel="noopener noreferrer">
+              <Button
+                asChild
+                className="flex-1 bg-green hover:bg-green/90 py-6 text-lg font-bold gap-3 cursor-pointer">
+                <a
+                  href="https://www.amazon.com"
+                  target="_blank"
+                  rel="noopener noreferrer">
                   <FiExternalLink className="w-5 h-5" /> Get This Deal
                 </a>
               </Button>
@@ -274,28 +311,28 @@ export default function DealsDetails() {
 
           <div className="space-y-2">
             <p className="text-light-grey leading-relaxed">
-              <span className="font-bold text-green">How to Get This Deal:</span> {deal.howToGet}
+              <span className="font-bold text-green">
+                How to Get This Deal:
+              </span>{' '}
+              {deal.howToGet}
             </p>
           </div>
         </div>
 
         {/* Comments Section */}
-        <CommentSection 
-          comments={deal.commentsList || []} 
-          dealId={deal.id} 
-        />
+        <CommentSection comments={deal.commentsList || []} dealId={deal.id} />
 
         {/* Similar Deals */}
         <div className="mt-16 space-y-6">
           <h2 className="text-2xl font-bold">You Might Also Like</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {relatedDeals.map(d => (
-              <DealCard 
-                key={d.id} 
+            {relatedDeals.map((d) => (
+              <DealCard
+                key={d.id}
                 deal={{
                   ...d,
-                  storeIcon: getStoreIcon(d.storeIcon)
-                }} 
+                  storeIcon: getStoreIcon(d.storeIcon),
+                }}
               />
             ))}
           </div>
