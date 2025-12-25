@@ -233,8 +233,10 @@ export default function DealsDetails() {
                   </Button>
                 </div>
               </div>
-              <Button className="flex-1 bg-green hover:bg-green/90 py-6 text-lg font-bold gap-3 cursor-pointer">
-                <FiExternalLink className="w-5 h-5" /> Get This Deal
+              <Button asChild className="flex-1 bg-green hover:bg-green/90 py-6 text-lg font-bold gap-3 cursor-pointer">
+                <a href="https://www.amazon.com" target="_blank" rel="noopener noreferrer">
+                  <FiExternalLink className="w-5 h-5" /> Get This Deal
+                </a>
               </Button>
             </div>
           </div>
