@@ -18,6 +18,7 @@ import {
   FieldLabel,
   FieldError,
 } from "@/components/ui/field";
+import { login } from "@/lib/api";
 
 // Zod validation schema for sign-in form
 const signinSchema = z.object({
@@ -88,26 +89,19 @@ export default function Signin() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        body: JSON.stringify(validation.data),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Login failed");
-      }
-
-      const data = await response.json();
+      const data = await login(validation.data);
       console.log("Login successful:", data);
+      
+      // Store token if returned
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+      }
       
       // Navigate to home page on success
       navigate("/");
     } catch (error) {
       console.error("Login error:", error);
-      setErrors({ email: "Invalid email or password" });
+      setErrors({ email: error instanceof Error ? error.message : "Invalid email or password" });
     } finally {
       setIsLoading(false);
     }

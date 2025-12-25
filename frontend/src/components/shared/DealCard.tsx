@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -57,9 +58,11 @@ export function DealCard({ deal }: DealCardProps) {
           <span className="text-red-500 font-semibold text-sm">{deal.timeLeft}</span>
         </div>
 
-        <h3 className="text-white font-medium mb-1 line-clamp-2">
-          {deal.title}
-        </h3>
+        <Link to={`/deals/${deal.id}`}>
+          <h3 className="text-white font-medium mb-1 line-clamp-2 hover:text-green cursor-pointer">
+            {deal.title}
+          </h3>
+        </Link>
 
         <div className="flex items-center gap-2 mb-2">
           {deal.storeIcon}
@@ -89,9 +92,11 @@ export function DealCard({ deal }: DealCardProps) {
         </div>
 
         <div className="flex gap-2 mb-1">
-          <Button className="flex-1 bg-green hover:bg-green/90 cursor-pointer">
-            Get Deal
-          </Button>
+          <Link to={`/deals/${deal.id}`} className="flex-1">
+            <Button className="w-full bg-green hover:bg-green/90 cursor-pointer">
+              Get Deal
+            </Button>
+          </Link>
         </div>
       </div>
     </Card>

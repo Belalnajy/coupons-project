@@ -8,6 +8,9 @@
   --color-light-grey: oklch(72.84% 0 0);
   --color-grey: oklch(37.15% 0 0);
   --color-darker-grey: oklch(32.11% 0 0);
+  --color-red: oklch(63.68% 0.208 25.33);
+  --color-gold:oklch(82.51% 0.157 76.35);
+  --color-silver:oklch(87.30% 0.000 0);
 }
 
 /* :root {

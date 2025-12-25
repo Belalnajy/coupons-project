@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Register from "./pages/Register";
 import Signin from "./pages/Signin";
 import Deals from "./pages/Deals";
+import DealsDetails from "./pages/DealsDetails";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/signin" element={<Signin />} />
             <Route path="/deals" element={<Deals />} />
+            <Route path="/deals/:id" element={<DealsDetails />} />
           </Route>
         </Routes>
       </BrowserRouter>

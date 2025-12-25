@@ -12,7 +12,35 @@ export interface Deal {
   timeLeft: string;
   verified: boolean;
   trending: boolean;
-  storeIcon?: string; // Store icon identifier (e.g., "amazon", "ebay")
+  storeIcon?: string;
+  description?: string;
+  whatsIncluded?: string[];
+  howToGet?: string;
+  category?: string;
+  user?: {
+    name: string;
+    avatar?: string;
+    badge?: string;
+  };
+  votes?: {
+    up: number;
+    down: number;
+    temperature: number;
+  };
+  images?: string[];
+  commentsList?: Comment[];
+}
+
+export interface Comment {
+  id: number;
+  user: {
+    name: string;
+    avatar?: string;
+    badge?: string;
+  };
+  text: string;
+  likes: number;
+  time: string;
 }
 
 export interface Coupon {
