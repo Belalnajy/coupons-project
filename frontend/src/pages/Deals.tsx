@@ -8,7 +8,6 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiChevronDown,
-  FiTag,
   FiPlus,
 } from 'react-icons/fi';
 import { FaFire } from 'react-icons/fa';

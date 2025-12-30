@@ -33,6 +33,7 @@ export function useComments(
             likes: 0,
             time: 'Just now',
             user: {
+              id: currentUser?.id || 'current-user', // Fallback ID
               name: currentUser?.username || currentUser?.name || 'You',
               avatar: currentUser?.avatar || currentUser?.avatarUrl,
             },
@@ -51,24 +52,27 @@ export function useComments(
     [dealId]
   );
 
-  const editComment = useCallback(async (commentId: number, text: string) => {
-    try {
-      const response = await updateComment(commentId, text);
-      if (response.success) {
-        setComments((prev) =>
-          prev.map((c) => (c.id === commentId ? { ...c, text } : c))
-        );
-        return true;
+  const editComment = useCallback(
+    async (commentId: string | number, text: string) => {
+      try {
+        const response = await updateComment(Number(commentId), text); // Ensure API calls handle conversion if needed
+        if (response.success) {
+          setComments((prev) =>
+            prev.map((c) => (c.id === commentId ? { ...c, text } : c))
+          );
+          return true;
+        }
+      } catch (err) {
+        console.error('Failed to update comment:', err);
       }
-    } catch (err) {
-      console.error('Failed to update comment:', err);
-    }
-    return false;
-  }, []);
+      return false;
+    },
+    []
+  );
 
-  const removeComment = useCallback(async (commentId: number) => {
+  const removeComment = useCallback(async (commentId: string | number) => {
     try {
-      const response = await deleteComment(commentId);
+      const response = await deleteComment(Number(commentId));
       if (response.success) {
         setComments((prev) => prev.filter((c) => c.id !== commentId));
         return true;

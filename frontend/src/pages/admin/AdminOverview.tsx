@@ -1,10 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StatCard } from '@/components/features/admin/StatCard';
 import {
-  ActivityItem,
-  type ActivityType,
-} from '@/components/features/admin/ActivityItem';
-import {
   FiPackage,
   FiClock,
   FiTag,
@@ -59,21 +55,25 @@ const AdminOverview: React.FC = () => {
           label="Total Deals"
           value={loading ? '...' : stats?.totalDeals || 0}
           icon={FiPackage}
+          trend={5}
         />
         <StatCard
           label="Pending Deals"
           value={loading ? '...' : stats?.pendingDeals || 0}
           icon={FiClock}
+          trend={-2}
         />
         <StatCard
           label="Pending Reports"
           value={loading ? '...' : stats?.pendingReports || 0}
           icon={FiAlertCircle}
+          trend={0}
         />
         <StatCard
           label="Total Users"
           value={loading ? '...' : stats?.totalUsers || 0}
           icon={FiUsers}
+          trend={12}
         />
       </div>
 
@@ -82,11 +82,13 @@ const AdminOverview: React.FC = () => {
           label="Active Deals"
           value={loading ? '...' : stats?.activeDeals || 0}
           icon={FiTag}
+          trend={8}
         />
         <StatCard
           label="Total Stores"
           value={loading ? '...' : stats?.totalStores || 0}
           icon={FiShoppingCart}
+          trend={3}
         />
       </div>
 

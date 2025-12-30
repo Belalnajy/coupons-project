@@ -12,14 +12,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { FiThumbsUp, FiEdit2, FiTrash2, FiCheck, FiX } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiCheck, FiX } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 import type { Comment } from '@/lib/types';
 
 interface CommentItemProps {
   comment: Comment;
-  onEdit: (id: number, text: string) => Promise<boolean>;
-  onDelete: (id: number) => Promise<boolean>;
+  onEdit: (id: string | number, text: string) => Promise<boolean>;
+  onDelete: (id: string | number) => Promise<boolean>;
 }
 
 export function CommentItem({ comment, onEdit, onDelete }: CommentItemProps) {

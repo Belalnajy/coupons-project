@@ -3,7 +3,6 @@ import {
   FiGrid,
   FiPackage,
   FiMessageSquare,
-  FiTag,
   FiSettings,
   FiLogOut,
   FiPlusCircle,
@@ -165,11 +164,11 @@ export function Sidebar({
                   'w-12 h-12 border-2',
                   isAdmin ? 'border-[#49b99f]/20' : 'border-white/10'
                 )}>
-                <AvatarImage src={user?.avatar} alt={user?.name} />
+                <AvatarImage src={user?.avatar} alt={user?.username} />
                 <AvatarFallback className="bg-darker-grey text-[#49b99f] font-bold">
-                  {user?.name
+                  {user?.username
                     ?.split(' ')
-                    .map((n) => n[0])
+                    .map((n: string) => n[0])
                     .join('') || 'U'}
                 </AvatarFallback>
               </Avatar>
@@ -182,7 +181,7 @@ export function Sidebar({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-white font-black truncate text-sm tracking-tight">
-                {user?.name || 'Guest User'}
+                {user?.username || 'Guest User'}
               </p>
               <p className="text-light-grey text-[10px] font-bold uppercase tracking-widest opacity-60">
                 {isAdmin ? 'Super Admin' : 'Member'}
