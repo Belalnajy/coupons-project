@@ -67,7 +67,9 @@ export async function getCoupons(
 /**
  * Fetch a single coupon by ID
  */
-export async function getCouponById(id: number): Promise<Coupon | null> {
+export async function getCouponById(
+  id: string | number
+): Promise<Coupon | null> {
   if (API_CONFIG.USE_MOCK_DATA) {
     await mockDelay(200);
     return MOCK_COUPONS.find((coupon) => coupon.id === id) || null;

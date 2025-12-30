@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FiSearch, FiMenu, FiX } from 'react-icons/fi';
+import { useAuth } from '@/context/AuthContext';
 
 export function Navbar() {
+  const { isAuthenticated, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -59,18 +61,43 @@ export function Navbar() {
               className="text-white hover:text-green transition-colors">
               Coupons
             </Link>
-            <Link to="/dashboard/submit-deal">
+            <Link to={isAuthenticated ? '/dashboard/submit-deal' : '/register'}>
               <Button className="bg-green hover:bg-green/90 text-white font-medium px-4 cursor-pointer">
                 + Submit deal
               </Button>
             </Link>
-            <Link to="/dashboard">
-              <Button
-                variant="outline"
-                className="border-light-grey text-white hover:bg-grey cursor-pointer">
-                Dashboard
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to="/dashboard">
+                  <Button
+                    variant="outline"
+                    className="border-light-grey text-white hover:bg-grey cursor-pointer">
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button
+                  onClick={logout}
+                  variant="ghost"
+                  className="text-red-400 hover:text-red-500 hover:bg-red-500/10 cursor-pointer">
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/signin">
+                  <Button
+                    variant="ghost"
+                    className="text-white hover:text-green hover:bg-white/5 cursor-pointer">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button className="bg-green hover:bg-green/90 text-white font-medium px-4 cursor-pointer">
+                    Join Free
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -117,20 +144,54 @@ export function Navbar() {
                 onClick={() => setIsMobileMenuOpen(false)}>
                 Coupons
               </Link>
+
               <Link
-                to="/dashboard/submit-deal"
+                to={isAuthenticated ? '/dashboard/submit-deal' : '/register'}
                 onClick={() => setIsMobileMenuOpen(false)}>
                 <Button className="bg-green hover:bg-green/90 text-white font-medium w-full cursor-pointer">
                   + Submit deal
                 </Button>
               </Link>
-              <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button
-                  variant="outline"
-                  className="border-light-grey text-white hover:bg-grey w-full cursor-pointer">
-                  Dashboard
-                </Button>
-              </Link>
+
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button
+                      variant="outline"
+                      className="border-light-grey text-white hover:bg-grey w-full cursor-pointer">
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Button
+                    onClick={() => {
+                      logout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    variant="ghost"
+                    className="text-red-400 hover:text-red-500 hover:bg-red-500/10 w-full cursor-pointer">
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/signin" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button
+                      variant="ghost"
+                      className="text-white hover:text-green hover:bg-white/5 w-full cursor-pointer">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button className="bg-green hover:bg-green/90 text-white font-medium w-full cursor-pointer">
+                      Join Free
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}

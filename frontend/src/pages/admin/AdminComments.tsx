@@ -1,58 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiSearch, FiCheck, FiTrash2 } from 'react-icons/fi';
+import { FiSearch, FiCheck, FiTrash2, FiMessageSquare } from 'react-icons/fi';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
-
-type CommentStatus = 'Pending' | 'Approved';
-
-interface Comment {
-  id: string;
-  text: string;
-  user: string;
-  relatedDeal: {
-    id: string;
-    title: string;
-  };
-  date: string;
-  status: CommentStatus;
-}
-
-const MOCK_COMMENTS: Comment[] = [
-  {
-    id: '1',
-    text: 'Great deal! Just ordered one. Thanks for sharing!',
-    user: 'DealsHunter123',
-    relatedDeal: {
-      id: 'deal-1',
-      title: 'Samsung Galaxy S24 Ultra - 50% Off',
-    },
-    date: '2023-12-16 14:30',
-    status: 'Approved',
-  },
-  {
-    id: '2',
-    text: 'This is spam content with suspicious links',
-    user: 'Spammer123',
-    relatedDeal: {
-      id: 'deal-2',
-      title: 'Fake iPhone Deal',
-    },
-    date: '2023-12-16 14:30',
-    status: 'Pending',
-  },
-  {
-    id: '3',
-    text: 'Does this work with the student discount?',
-    user: 'TechSaver99',
-    relatedDeal: {
-      id: 'deal-3',
-      title: 'Apple AirPods Pro 2 - 35% Discount',
-    },
-    date: '2023-12-16 14:30',
-    status: 'Pending',
-  },
-];
+import {
+  getAdminComments,
+  approveComment,
+  deleteComment,
+} from '@/services/api/admin.api';
 
 const SummaryCard = ({
   label,
@@ -77,16 +32,75 @@ const SummaryCard = ({
   </div>
 );
 
-const AdminComments: React.FC = () => {
-  const [filter, setFilter] = useState<CommentStatus | 'All'>('All');
-  const [search, setSearch] = useState('');
+import Swal from 'sweetalert2';
+import { toast } from 'react-hot-toast';
 
-  const filteredComments = MOCK_COMMENTS.filter((comment) => {
-    const matchesFilter = filter === 'All' || comment.status === filter;
+const AdminComments: React.FC = () => {
+  const [comments, setComments] = useState<any[]>([]);
+  const [filter, setFilter] = useState<string>('All');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const fetchComments = async () => {
+    setLoading(true);
+    try {
+      const params: any = {};
+      if (filter !== 'All') params.status = filter.toLowerCase();
+      const data = await getAdminComments(params);
+      setComments(data.data || []);
+    } catch (error) {
+      console.error('Failed to fetch admin comments:', error);
+      toast.error('Failed to load comments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchComments();
+  }, [filter]);
+
+  const handleApprove = async (id: string) => {
+    try {
+      await approveComment(id);
+      toast.success('Comment approved');
+      fetchComments();
+    } catch (error) {
+      toast.error('Failed to approve comment');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: 'Delete Comment?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#333',
+      confirmButtonText: 'Yes, delete it!',
+      background: '#2c2c2c',
+      color: '#fff',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteComment(id);
+        toast.success('Comment deleted');
+        fetchComments();
+      } catch (error) {
+        toast.error('Failed to delete comment');
+      }
+    }
+  };
+
+  const filteredComments = comments.filter((comment) => {
     const matchesSearch =
-      comment.text.toLowerCase().includes(search.toLowerCase()) ||
-      comment.user.toLowerCase().includes(search.toLowerCase());
-    return matchesFilter && matchesSearch;
+      comment.content.toLowerCase().includes(search.toLowerCase()) ||
+      (comment.user?.username || '')
+        .toLowerCase()
+        .includes(search.toLowerCase());
+    return matchesSearch;
   });
 
   return (
@@ -103,9 +117,17 @@ const AdminComments: React.FC = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <SummaryCard label="Total Comments" value={7} />
-        <SummaryCard label="Pending Review" value={2} />
-        <SummaryCard label="Approved" value={5} />
+        <SummaryCard label="Total Comments" value={comments.length} />
+        <SummaryCard
+          label="Pending"
+          value={comments.filter((c) => c.status === 'pending').length}
+          colorClass="text-yellow-500"
+        />
+        <SummaryCard
+          label="Approved"
+          value={comments.filter((c) => c.status === 'approved').length}
+          colorClass="text-[#49b99f]"
+        />
       </div>
 
       {/* Filters & Search */}
@@ -114,14 +136,14 @@ const AdminComments: React.FC = () => {
           {['All', 'Pending', 'Approved'].map((opt) => (
             <button
               key={opt}
-              onClick={() => setFilter(opt as any)}
+              onClick={() => setFilter(opt)}
               className={cn(
                 'px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap',
                 filter === opt
                   ? 'bg-[#49b99f] text-white shadow-lg shadow-[#49b99f]/20'
                   : 'text-light-grey hover:text-white'
               )}>
-              {opt} {opt === 'Pending' ? `(2)` : ''}
+              {opt}
             </button>
           ))}
         </div>
@@ -140,88 +162,106 @@ const AdminComments: React.FC = () => {
       {/* Management Table */}
       <div className="bg-[#2c2c2c] rounded-2xl border border-white/5 shadow-2xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-[#1a1a1a] border-b border-white/5">
-              <tr>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-light-grey/80">
-                  Comment
-                </th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-light-grey/80">
-                  User
-                </th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-light-grey/80">
-                  Related Deal
-                </th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-light-grey/80">
-                  Date
-                </th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-light-grey/80 text-center">
-                  Status
-                </th>
-                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-light-grey/80 text-center">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {filteredComments.map((comment) => (
-                <tr
-                  key={comment.id}
-                  className="group hover:bg-white/2 transition-colors">
-                  <td className="px-6 py-5">
-                    <p className="text-white font-bold text-sm leading-snug max-w-[300px]">
-                      {comment.text}
-                    </p>
-                  </td>
-                  <td className="px-6 py-5">
-                    <span className="text-light-grey text-sm font-medium">
-                      {comment.user}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5">
-                    <Link
-                      to={`/admin/deals/${comment.relatedDeal.id}`}
-                      className="text-[#49b99f] hover:underline font-bold text-sm line-clamp-2">
-                      {comment.relatedDeal.title}
-                    </Link>
-                  </td>
-                  <td className="px-6 py-5">
-                    <p className="text-light-grey text-[11px] leading-tight font-medium">
-                      {comment.date.split(' ')[0]}
-                      <br />
-                      <span className="opacity-50">
-                        {comment.date.split(' ')[1]}
-                      </span>
-                    </p>
-                  </td>
-                  <td className="px-6 py-5 text-center">
-                    <span
-                      className={cn(
-                        'text-xs font-black uppercase tracking-widest px-2.5 py-1 rounded-md border',
-                        comment.status === 'Pending' &&
-                          'text-yellow-500 bg-yellow-500/10 border-yellow-500/20',
-                        comment.status === 'Approved' &&
-                          'text-[#49b99f] bg-[#49b99f]/10 border-[#49b99f]/20'
-                      )}>
-                      {comment.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      {comment.status === 'Pending' && (
-                        <button className="p-2 text-[#49b99f] hover:scale-110 transition-all cursor-pointer rounded-lg hover:bg-[#49b99f]/10">
-                          <FiCheck className="w-4 h-4" />
-                        </button>
-                      )}
-                      <button className="p-2 text-red-500 hover:scale-110 transition-all cursor-pointer rounded-lg hover:bg-red-500/10">
-                        <FiTrash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+          {loading ? (
+            <div className="p-12 text-center text-light-grey">
+              Loading comments...
+            </div>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-[#1a1a1a] border-b border-white/5">
+                <tr>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-light-grey/80">
+                    Comment
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-light-grey/80">
+                    User
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-light-grey/80">
+                    Related Deal
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-light-grey/80">
+                    Date
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-light-grey/80 text-center">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-light-grey/80 text-center">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredComments.length > 0 ? (
+                  filteredComments.map((comment) => (
+                    <tr
+                      key={comment.id}
+                      className="group hover:bg-white/2 transition-colors">
+                      <td className="px-6 py-5">
+                        <p className="text-white font-bold text-sm leading-snug max-w-[300px]">
+                          {comment.content}
+                        </p>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className="text-light-grey text-sm font-medium">
+                          {comment.user?.username || 'Anonymous'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <Link
+                          to={`/deals/${comment.deal?.id}`}
+                          target="_blank"
+                          className="text-[#49b99f] hover:underline font-bold text-sm line-clamp-2">
+                          {comment.deal?.title || 'View Deal'}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-5">
+                        <p className="text-light-grey text-[11px] leading-tight font-medium">
+                          {new Date(comment.createdAt).toLocaleString()}
+                        </p>
+                      </td>
+                      <td className="px-6 py-5 text-center">
+                        <span
+                          className={cn(
+                            'text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border',
+                            comment.status === 'pending' &&
+                              'text-yellow-500 bg-yellow-500/10 border-yellow-500/20',
+                            comment.status === 'approved' &&
+                              'text-[#49b99f] bg-[#49b99f]/10 border-[#49b99f]/20'
+                          )}>
+                          {comment.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          {comment.status === 'pending' && (
+                            <button
+                              onClick={() => handleApprove(comment.id)}
+                              className="p-2 text-[#49b99f] hover:scale-110 transition-all cursor-pointer rounded-lg hover:bg-[#49b99f]/10">
+                              <FiCheck className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(comment.id)}
+                            className="p-2 text-red-500 hover:scale-110 transition-all cursor-pointer rounded-lg hover:bg-red-500/10">
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-6 py-12 text-center text-light-grey">
+                      <FiMessageSquare className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                      <p>No comments found.</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

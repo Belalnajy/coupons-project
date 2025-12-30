@@ -30,10 +30,35 @@ import AdminSettings from './pages/admin/AdminSettings';
 import AdminVoting from './pages/admin/AdminVoting';
 import AdminReports from './pages/admin/AdminReports';
 import AdminReportReview from './pages/admin/AdminReportReview';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import Snowfall from 'react-snowfall';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
     <>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: {
+            background: '#333',
+            color: '#fff',
+            borderRadius: '10px',
+          },
+        }}
+      />
+      <div
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 9999,
+          pointerEvents: 'none',
+        }}>
+        <Snowfall />
+      </div>
       <BrowserRouter>
         <Routes>
           <Route element={<MainLayout />}>
@@ -46,7 +71,13 @@ function App() {
           </Route>
 
           {/* Dashboard Routes */}
-          <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }>
             <Route index element={<Overview />} />
             <Route path="submit-deal" element={<SubmitDeal />} />
             <Route path="deals" element={<MyDeals />} />
@@ -57,7 +88,13 @@ function App() {
           </Route>
 
           {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminLayout />
+              </ProtectedRoute>
+            }>
             <Route index element={<AdminOverview />} />
             <Route path="voting" element={<AdminVoting />} />
             <Route path="deals" element={<AdminDeals />} />

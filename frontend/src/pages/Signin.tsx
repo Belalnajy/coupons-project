@@ -1,5 +1,5 @@
 import Snowfall from 'react-snowfall';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useAuth } from '@/context/AuthContext';
@@ -39,7 +39,13 @@ export default function Signin() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [errors, setErrors] = React.useState<FormErrors>({});
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   // Validate individual field on blur
   const handleBlur = (fieldName: keyof SigninFormData, value: string) => {
@@ -90,24 +96,35 @@ export default function Signin() {
     setIsLoading(true);
 
     try {
-      // For demonstration, we allow any login to pass as a 'user'
-      await login('user');
+      await login(formValues);
       console.log('Login successful');
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      setErrors({ email: 'Invalid email or password' });
+      setErrors({
+        email: error?.response?.data?.message || 'Invalid email or password',
+      });
     } finally {
       setIsLoading(false);
     }
   }
 
-  const handleMockLogin = async (role: 'user' | 'admin') => {
+  async function autoLogin(e: string, p: string) {
     setIsLoading(true);
-    await login(role);
-    navigate(role === 'admin' ? '/admin' : '/dashboard');
-    setIsLoading(false);
-  };
+    setErrors({});
+    try {
+      await login({ email: e, password: p });
+      console.log('Auto-login successful');
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Auto-login error:', error);
+      setErrors({
+        email: error?.response?.data?.message || 'Invalid email or password',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <>
@@ -135,32 +152,38 @@ export default function Signin() {
                 Register
               </Button>
             </div>
+          </CardHeader>
 
-            {/* Quick Login for Mocking */}
-            <div className="pt-4 space-y-2">
-              <p className="text-xs text-center text-light-grey mb-2 uppercase tracking-widest font-bold">
-                Quick Login (Mock)
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1 border-[#49b99f] text-[#49b99f] hover:bg-[#49b99f] hover:text-white cursor-pointer"
-                  onClick={() => handleMockLogin('user')}
-                  disabled={isLoading}>
-                  User
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1 border-[#49b99f] text-[#49b99f] hover:bg-[#49b99f] hover:text-white cursor-pointer"
-                  onClick={() => handleMockLogin('admin')}
-                  disabled={isLoading}>
-                  Admin
-                </Button>
+          {/* Demo Login Cards */}
+          <div className="px-6 pb-2 grid grid-cols-2 gap-3">
+            <div
+              onClick={() => autoLogin('admin@waferlee.com', 'admin123')}
+              className="bg-[#2c2c2c] hover:bg-[#333] border border-white/5 p-3 rounded-xl cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] group">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-500 font-bold text-xs ring-1 ring-red-500/50">
+                  A
+                </div>
+                <div>
+                  <p className="text-white font-bold text-sm">Admin</p>
+                  <p className="text-light-grey text-[10px]">Full Access</p>
+                </div>
               </div>
             </div>
-          </CardHeader>
+
+            <div
+              onClick={() => autoLogin('belal@example.com', 'password123')}
+              className="bg-[#2c2c2c] hover:bg-[#333] border border-white/5 p-3 rounded-xl cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] group">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-8 h-8 rounded-full bg-[#49b99f]/20 flex items-center justify-center text-[#49b99f] font-bold text-xs ring-1 ring-[#49b99f]/50">
+                  U
+                </div>
+                <div>
+                  <p className="text-white font-bold text-sm">User</p>
+                  <p className="text-light-grey text-[10px]">Regular User</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <CardContent className="space-y-4">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   FiArrowLeft,
@@ -11,25 +11,65 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  getAdminUser,
+  createAdminUser,
+  updateAdminUser,
+} from '@/services/api/admin.api';
+
+import { toast } from 'react-hot-toast';
 
 const AdminUserEdit: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
 
-  // Mock initial data if editing
   const [formData, setFormData] = useState({
-    username: isEdit ? 'DealsHunter123' : '',
-    email: isEdit ? 'dealshunter@example.com' : '',
-    role: isEdit ? 'user' : 'user',
-    status: isEdit ? 'Active' : 'Active',
+    username: '',
+    email: '',
+    role: 'user',
+    status: 'active' as 'active' | 'suspended',
     password: '',
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isEdit && id) {
+      setLoading(true);
+      getAdminUser(id)
+        .then((data) => {
+          setFormData({
+            username: data.username,
+            email: data.email,
+            role: data.role,
+            status: data.status,
+            password: '', // Don't fetch password
+          });
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [id, isEdit]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Saving user data:', formData);
-    navigate('/admin/users');
+    try {
+      setLoading(true);
+      if (isEdit && id) {
+        // If password is empty, don't send it
+        const updateData: any = { ...formData };
+        if (!updateData.password) delete updateData.password;
+        await updateAdminUser(id, updateData);
+        toast.success('User updated successfully');
+      } else {
+        await createAdminUser(formData);
+        toast.success('User created successfully');
+      }
+      navigate('/admin/users');
+    } catch (error) {
+      toast.error('Failed to save user');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -134,7 +174,7 @@ const AdminUserEdit: React.FC = () => {
                 Account Status
               </label>
               <div className="flex gap-4">
-                {['Active', 'Suspended'].map((status) => (
+                {['active', 'suspended'].map((status) => (
                   <button
                     key={status}
                     type="button"
@@ -142,9 +182,9 @@ const AdminUserEdit: React.FC = () => {
                       setFormData({ ...formData, status: status as any })
                     }
                     className={cn(
-                      'flex-1 h-14 rounded-2xl border font-bold transition-all',
+                      'flex-1 h-14 rounded-2xl border font-bold transition-all capitalize',
                       formData.status === status
-                        ? status === 'Active'
+                        ? status === 'active'
                           ? 'bg-[#49b99f]/10 border-[#49b99f] text-[#49b99f]'
                           : 'bg-red-500/10 border-red-500 text-red-500'
                         : 'bg-[#1a1a1a] border-white/5 text-light-grey hover:border-white/10'
@@ -159,9 +199,14 @@ const AdminUserEdit: React.FC = () => {
           <div className="pt-6 border-t border-white/5 flex gap-4">
             <Button
               type="submit"
+              disabled={loading}
               className="flex-1 h-14 bg-[#49b99f] hover:bg-[#49b99f]/90 text-white font-black uppercase tracking-widest rounded-2xl gap-3 text-sm cursor-pointer border-0 shadow-lg shadow-[#49b99f]/20">
               <FiSave className="w-5 h-5" />
-              {isEdit ? 'Update User Account' : 'Create User Account'}
+              {loading
+                ? 'Saving...'
+                : isEdit
+                ? 'Update User Account'
+                : 'Create User Account'}
             </Button>
             <Button
               type="button"

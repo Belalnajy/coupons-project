@@ -1,48 +1,43 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { FiPlus, FiPackage } from 'react-icons/fi';
 import { DealCard } from '@/components/features/deals';
-import type { DealProps } from '@/components/features/deals/DealCard';
-
-const MOCK_USER_DEALS: DealProps[] = [
-  {
-    id: 1,
-    title: 'Apple MacBook Air M2 - $899 at Amazon',
-    store: 'Amazon',
-    price: '$899',
-    originalPrice: '$1,199',
-    discount: '25% OFF',
-    comments: 12,
-    timePosted: '2 hours ago',
-    timeLeft: '3 days',
-    verified: true,
-    trending: true,
-    heatScore: 345,
-  },
-  {
-    id: 2,
-    title: 'Sony WH-1000XM5 Noise Canceling Headphones',
-    store: 'Best Buy',
-    price: '$298',
-    originalPrice: '$399',
-    discount: '25% OFF',
-    comments: 8,
-    timePosted: '5 hours ago',
-    timeLeft: '1 day',
-    verified: true,
-    trending: false,
-    heatScore: 120,
-  },
-];
+import { getMyDeals } from '@/services/api/users.api';
+import { mapDealToFrontend } from '@/lib/mappers';
+import type { Deal } from '@/lib/types';
 
 export default function MyDeals() {
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    async function fetchDeals() {
+      setIsLoading(true);
+      try {
+        const response = await getMyDeals({ limit: 100 }); // Get many for now, or implement pagination
+        const items = Array.isArray(response.data) ? response.data : [];
+        setDeals(items.map(mapDealToFrontend));
+        setTotal(response.total || items.length);
+      } catch (error) {
+        console.error('Failed to fetch user deals:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchDeals();
+  }, []);
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">My Deals</h1>
           <p className="text-light-grey text-lg">
-            Manage and track the performance of your shared deals.
+            {isLoading
+              ? 'Fetching your deals...'
+              : `You have shared ${total} deals with the community.`}
           </p>
         </div>
         <Link to="/dashboard/submit-deal">
@@ -53,9 +48,18 @@ export default function MyDeals() {
         </Link>
       </div>
 
-      {MOCK_USER_DEALS.length > 0 ? (
+      {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-          {MOCK_USER_DEALS.map((deal) => (
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-80 bg-grey/30 rounded-3xl animate-pulse"
+            />
+          ))}
+        </div>
+      ) : deals.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+          {deals.map((deal) => (
             <DealCard key={deal.id} deal={deal} />
           ))}
         </div>

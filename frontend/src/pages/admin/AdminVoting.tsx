@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FiActivity,
   FiTrendingUp,
@@ -11,64 +11,18 @@ import {
 } from 'react-icons/fi';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import {
+  getAdminDeals,
+  freezeVoting,
+  unfreezeVoting,
+  getVotingAnalytics,
+} from '@/services/api/admin.api';
 
-interface VotingDeal {
-  id: string;
-  title: string;
-  author: string;
-  hotVotes: number;
-  coldVotes: number;
-  decayFactor: number;
-  isVotingEnabled: boolean;
-  isFlagged: boolean;
-}
-
-const MOCK_VOTING_DEALS: VotingDeal[] = [
-  {
-    id: '1',
-    title: 'PlayStation 5 Slim Console',
-    author: 'GamerPro',
-    hotVotes: 450,
-    coldVotes: 12,
-    decayFactor: 0.95,
-    isVotingEnabled: true,
-    isFlagged: false,
-  },
-  {
-    id: '2',
-    title: 'Samsung 65" 4K TV',
-    author: 'TechSavvy',
-    hotVotes: 890,
-    coldVotes: 45,
-    decayFactor: 0.8, // Older deal, decayed more
-    isVotingEnabled: true,
-    isFlagged: false,
-  },
-  {
-    id: '3',
-    title: 'Suspicious 99% Off iPhone',
-    author: 'UnknownUser',
-    hotVotes: 50,
-    coldVotes: 200,
-    decayFactor: 1.0,
-    isVotingEnabled: false,
-    isFlagged: true,
-  },
-  {
-    id: '4',
-    title: 'Free Coffee Coupon',
-    author: 'CoffeeLover',
-    hotVotes: 120,
-    coldVotes: 5,
-    decayFactor: 0.98,
-    isVotingEnabled: true,
-    isFlagged: false,
-  },
-];
-
-const calculateTemperature = (hot: number, cold: number, decay: number) => {
-  return Math.round((hot - cold) * decay);
+const calculateTemperature = (hot: number, cold: number) => {
+  return hot - cold;
 };
+
+import { toast } from 'react-hot-toast';
 
 const AnalyticsCard = ({
   label,
@@ -107,32 +61,49 @@ const AnalyticsCard = ({
 );
 
 const AdminVoting: React.FC = () => {
-  const [deals, setDeals] = useState(MOCK_VOTING_DEALS);
+  const [deals, setDeals] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const toggleVoting = (id: string) => {
-    setDeals(
-      deals.map((deal) =>
-        deal.id === id
-          ? { ...deal, isVotingEnabled: !deal.isVotingEnabled }
-          : deal
-      )
-    );
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const dealsData = await getAdminDeals();
+      setDeals(dealsData.data || []);
+
+      const stats = await getVotingAnalytics();
+      setAnalytics(stats);
+    } catch (error) {
+      console.error('Failed to fetch voting data:', error);
+      toast.error('Failed to load voting data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleToggleVoting = async (id: string, currentlyFrozen: boolean) => {
+    try {
+      if (currentlyFrozen) {
+        await unfreezeVoting(id);
+        toast.success('Voting unfrozen');
+      } else {
+        await freezeVoting(id);
+        toast.success('Voting frozen');
+      }
+      fetchData();
+    } catch (error) {
+      toast.error('Failed to update voting status');
+    }
   };
 
   const filteredDeals = deals.filter((deal) =>
     deal.title.toLowerCase().includes(search.toLowerCase())
   );
-
-  const hottestDeal = [...deals].sort(
-    (a, b) =>
-      calculateTemperature(b.hotVotes, b.coldVotes, b.decayFactor) -
-      calculateTemperature(a.hotVotes, a.coldVotes, a.decayFactor)
-  )[0];
-
-  const mostActiveDeal = [...deals]
-    .sort((a, b) => a.hotVotes + a.coldVotes - (b.hotVotes + b.coldVotes))
-    .reverse()[0];
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
@@ -149,27 +120,23 @@ const AdminVoting: React.FC = () => {
       {/* Analytics Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <AnalyticsCard
-          label="Hottest Deal"
-          value={`${calculateTemperature(
-            hottestDeal.hotVotes,
-            hottestDeal.coldVotes,
-            hottestDeal.decayFactor
-          )}°`}
-          subtext={hottestDeal.title}
+          label="Total Votes"
+          value={analytics?.totalVotes || '0'}
+          subtext="Lifetime platform interaction"
           icon={FiTrendingUp}
           colorClass="text-red-500"
         />
         <AnalyticsCard
-          label="Most Active"
-          value={`${mostActiveDeal.hotVotes + mostActiveDeal.coldVotes} Votes`}
-          subtext={mostActiveDeal.title}
+          label="Platform Users"
+          value={analytics?.uniqueVoters || '0'}
+          subtext="Unique users who voted"
           icon={FiActivity}
           colorClass="text-[#49b99f]"
         />
         <AnalyticsCard
-          label="Suspicious Activity"
-          value="1 Flagged"
-          subtext="Requires meaningful review"
+          label="Frozen Deals"
+          value={`${deals.filter((d) => d.isVotingFrozen).length} Deals`}
+          subtext="Voting currently suspended"
           icon={FiAlertTriangle}
           colorClass="text-orange-500"
         />
@@ -197,107 +164,114 @@ const AdminVoting: React.FC = () => {
         {/* Table */}
         <div className="flex-1 p-8">
           <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left border-separate border-spacing-y-4">
-              <thead>
-                <tr>
-                  <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40">
-                    Deal Info
-                  </th>
-                  <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
-                    Temperature
-                  </th>
-                  <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
-                    Votes Breakdown
-                  </th>
-                  <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
-                    Status
-                  </th>
-                  <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDeals.map((deal) => {
-                  const temp = calculateTemperature(
-                    deal.hotVotes,
-                    deal.coldVotes,
-                    deal.decayFactor
-                  );
-                  return (
-                    <tr key={deal.id} className="group">
-                      <td className="px-6 py-4 bg-[#1a1a1a]/50 rounded-l-[1.5rem] first:border-l border-y border-white/5">
-                        <div className="flex flex-col">
-                          <span className="text-white font-black text-sm tracking-tight group-hover:text-[#49b99f] transition-colors">
-                            {deal.title}
-                          </span>
-                          <span className="text-[10px] text-light-grey font-bold opacity-60">
-                            by {deal.author}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5 text-center">
-                        <span
-                          className={cn(
-                            'text-xl font-black',
-                            temp > 0
-                              ? 'text-red-500'
-                              : temp < 0
-                              ? 'text-blue-400'
-                              : 'text-light-grey'
-                          )}>
-                          {temp}°
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5 text-center">
-                        <div className="flex items-center justify-center gap-4 text-xs font-bold">
-                          <span className="flex items-center gap-1 text-red-500">
-                            <FiTrendingUp /> {deal.hotVotes}
-                          </span>
-                          <span className="flex items-center gap-1 text-blue-400">
-                            <FiTrendingDown /> {deal.coldVotes}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5 text-center">
-                        <span
-                          className={cn(
-                            'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest',
-                            deal.isVotingEnabled
-                              ? 'bg-[#49b99f]/10 text-[#49b99f]'
-                              : 'bg-red-500/10 text-red-500'
-                          )}>
-                          {deal.isVotingEnabled ? 'Active' : 'Frozen'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-r border-white/5 rounded-r-[1.5rem] text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => toggleVoting(deal.id)}
+            {loading ? (
+              <div className="p-12 text-center text-light-grey">
+                Loading deals...
+              </div>
+            ) : (
+              <table className="w-full text-left border-separate border-spacing-y-4">
+                <thead>
+                  <tr>
+                    <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40">
+                      Deal Info
+                    </th>
+                    <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
+                      Temperature
+                    </th>
+                    <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
+                      Votes Breakdown
+                    </th>
+                    <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
+                      Status
+                    </th>
+                    <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredDeals.map((deal) => {
+                    const temp = calculateTemperature(
+                      deal.hotVotes || 0,
+                      deal.coldVotes || 0
+                    );
+                    return (
+                      <tr key={deal.id} className="group">
+                        <td className="px-6 py-4 bg-[#1a1a1a]/50 rounded-l-[1.5rem] first:border-l border-y border-white/5">
+                          <div className="flex flex-col">
+                            <span className="text-white font-black text-sm tracking-tight group-hover:text-[#49b99f] transition-colors">
+                              {deal.title}
+                            </span>
+                            <span className="text-[10px] text-light-grey font-bold opacity-60">
+                              by {deal.user?.username || 'Anonymous'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5 text-center">
+                          <span
                             className={cn(
-                              'p-2 rounded-xl transition-all hover:scale-110',
-                              deal.isVotingEnabled
-                                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
-                                : 'bg-[#49b99f]/10 text-[#49b99f] hover:bg-[#49b99f]/20'
-                            )}
-                            title={
-                              deal.isVotingEnabled
-                                ? 'Freeze Voting'
-                                : 'Enable Voting'
-                            }>
-                            {deal.isVotingEnabled ? (
-                              <FiPauseCircle className="w-5 h-5" />
-                            ) : (
-                              <FiPlayCircle className="w-5 h-5" />
-                            )}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                              'text-xl font-black',
+                              temp > 0
+                                ? 'text-red-500'
+                                : temp < 0
+                                ? 'text-blue-400'
+                                : 'text-light-grey'
+                            )}>
+                            {temp}°
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5 text-center">
+                          <div className="flex items-center justify-center gap-4 text-xs font-bold">
+                            <span className="flex items-center gap-1 text-red-500">
+                              <FiTrendingUp /> {deal.hotVotes || 0}
+                            </span>
+                            <span className="flex items-center gap-1 text-blue-400">
+                              <FiTrendingDown /> {deal.coldVotes || 0}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5 text-center">
+                          <span
+                            className={cn(
+                              'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest',
+                              !deal.isVotingFrozen
+                                ? 'bg-[#49b99f]/10 text-[#49b99f]'
+                                : 'bg-red-500/10 text-red-500'
+                            )}>
+                            {!deal.isVotingFrozen ? 'Active' : 'Frozen'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-r border-white/5 rounded-r-[1.5rem] text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() =>
+                                handleToggleVoting(deal.id, deal.isVotingFrozen)
+                              }
+                              className={cn(
+                                'p-2 rounded-xl transition-all hover:scale-110',
+                                !deal.isVotingFrozen
+                                  ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                                  : 'bg-[#49b99f]/10 text-[#49b99f] hover:bg-[#49b99f]/20'
+                              )}
+                              title={
+                                !deal.isVotingFrozen
+                                  ? 'Freeze Voting'
+                                  : 'Enable Voting'
+                              }>
+                              {!deal.isVotingFrozen ? (
+                                <FiPauseCircle className="w-5 h-5" />
+                              ) : (
+                                <FiPlayCircle className="w-5 h-5" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>

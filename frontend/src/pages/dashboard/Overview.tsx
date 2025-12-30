@@ -1,10 +1,15 @@
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FiPackage,
   FiMessageSquare,
-  FiTag,
   FiTrendingUp,
+  FiZap,
 } from 'react-icons/fi';
+import { getUserStats, getMyDeals } from '@/services/api/users.api';
+import { useAuth } from '@/context/AuthContext';
+import { DealCard } from '@/components/features/deals';
+import { mapDealToFrontend } from '@/lib/mappers';
 
 interface StatCardProps {
   title: string;
@@ -31,6 +36,30 @@ function StatCard({ title, value, icon: Icon, description }: StatCardProps) {
 }
 
 export default function Overview() {
+  const { user } = useAuth();
+  const [stats, setStats] = useState<any>(null);
+  const [recentDeals, setRecentDeals] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchDashboardData() {
+      setIsLoading(true);
+      try {
+        const [statsData, dealsData] = await Promise.all([
+          getUserStats(),
+          getMyDeals({ limit: 3 }),
+        ]);
+        setStats(statsData);
+        setRecentDeals(dealsData.data || []);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchDashboardData();
+  }, []);
+
   return (
     <div className="space-y-8">
       <div>
@@ -38,51 +67,72 @@ export default function Overview() {
           Dashboard Overview
         </h1>
         <p className="text-light-grey">
-          Welcome back, here's what's happening with your deals.
+          Welcome back,{' '}
+          <span className="text-green font-bold">{user?.username}</span>! Here's
+          what's happening.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Deals"
-          value="12"
+          value={isLoading ? '...' : stats?.dealsCount || 0}
           icon={FiPackage}
-          description="+2 from last month"
+          description="Deals you've shared"
         />
         <StatCard
-          title="My Coupons"
-          value="5"
-          icon={FiTag}
-          description="3 active right now"
+          title="Karma Points"
+          value={isLoading ? '...' : stats?.karma || 0}
+          icon={FiZap}
+          description={`Level: ${stats?.level || 'Bronze'}`}
         />
         <StatCard
           title="Comments"
-          value="48"
+          value={isLoading ? '...' : stats?.commentsCount || 0}
           icon={FiMessageSquare}
-          description="+12 this week"
+          description="Total community interaction"
         />
         <StatCard
-          title="Total Views"
-          value="1,284"
+          title="Impact Score"
+          value={isLoading ? '...' : stats?.impactScore || 0}
           icon={FiTrendingUp}
-          description="+18% since yesterday"
+          description="Helpfulness rating"
         />
       </div>
 
-      {/* Placeholder for Recent Activity or Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-        <Card className="bg-grey border-none text-white p-6 min-h-[300px]">
-          <h3 className="text-lg font-bold mb-4">Recent Deals</h3>
-          <div className="flex flex-col items-center justify-center h-full text-light-grey">
-            <FiPackage className="w-12 h-12 mb-4 opacity-20" />
-            <p>Your recently submitted deals will appear here.</p>
+        <Card className="bg-grey border-none text-white p-6 min-h-[400px]">
+          <h3 className="text-lg font-bold mb-6">Recent Deals</h3>
+          <div className="space-y-4">
+            {isLoading ? (
+              <div className="animate-pulse space-y-4">
+                {[1, 2].map((i) => (
+                  <div key={i} className="h-24 bg-darker-grey rounded-lg" />
+                ))}
+              </div>
+            ) : recentDeals.length > 0 ? (
+              <div className="grid gap-4">
+                {recentDeals.map((deal) => (
+                  <DealCard key={deal.id} deal={mapDealToFrontend(deal)} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-48 text-light-grey">
+                <FiPackage className="w-12 h-12 mb-4 opacity-20" />
+                <p>No deals submitted yet.</p>
+              </div>
+            )}
           </div>
         </Card>
-        <Card className="bg-grey border-none text-white p-6 min-h-[300px]">
+
+        <Card className="bg-grey border-none text-white p-6 min-h-[400px]">
           <h3 className="text-lg font-bold mb-4">Community Activity</h3>
-          <div className="flex flex-col items-center justify-center h-full text-light-grey">
+          <div className="flex flex-col items-center justify-center h-48 text-light-grey">
             <FiMessageSquare className="w-12 h-12 mb-4 opacity-20" />
             <p>Recent comments on your deals will appear here.</p>
+            <span className="text-xs italic mt-2 opacity-50">
+              (Coming soon: Comment notifications)
+            </span>
           </div>
         </Card>
       </div>

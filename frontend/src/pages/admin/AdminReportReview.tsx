@@ -1,43 +1,79 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  FiArrowLeft,
-  FiFlag,
-  FiBox,
-  FiAlertTriangle,
-  FiCheck,
-  FiX,
-  FiExternalLink,
-} from 'react-icons/fi';
+import { FiArrowLeft, FiFlag, FiBox, FiCheck, FiX } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
+import { getAdminReport, reviewReport } from '@/services/api/admin.api'; // Ensure this path is correct
+import { toast } from 'react-hot-toast';
+import Swal from 'sweetalert2';
 
 const AdminReportReview: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [reportData, setReportData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for the specific report based on the design image
-  const reportData = {
-    id: '#1',
-    date: '2023-12-16 14:30',
-    reporter: 'TrustedUser99',
-    type: 'Deal',
-    reason: 'Spam content',
-    description:
-      'This deal contains suspicious links and appears to be spam. The website redirects to questionable third-party sites.',
-    content: {
-      title: 'Fake iPhone Deal - Too Good to Be True',
-      submittedBy: 'Spammer123',
-      date: '2023-12-16 09:00',
-      price: '£50',
-      url: 'https://suspicious-site.example.com',
-      description: 'Amazing iPhone 15 Pro for just £50! Click here now!!!',
-    },
-    warningSigns: [
-      'Suspicious external URL domain',
-      'Price significantly below market value',
-      'Multiple spam reports from trusted users',
-    ],
+  useEffect(() => {
+    const fetchReport = async () => {
+      if (!id) return;
+      try {
+        const data = await getAdminReport(id);
+        setReportData(data);
+      } catch (error) {
+        console.error('Failed to fetch report:', error);
+        toast.error('Failed to load report details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReport();
+  }, [id]);
+
+  const handleAction = async (action: 'resolve' | 'dismiss') => {
+    if (!id) return;
+
+    const isResolve = action === 'resolve';
+    const result = await Swal.fire({
+      title: isResolve ? 'Delete Content & Suspend?' : 'Dismiss Report?',
+      text: isResolve
+        ? 'This will remove the content and flag the user.'
+        : 'This will mark the report as rejected/reviewed.',
+      icon: isResolve ? 'warning' : 'question',
+      showCancelButton: true,
+      confirmButtonColor: isResolve ? '#d33' : '#333',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: isResolve ? 'Yes, delete it!' : 'Yes, dismiss it',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await reviewReport(id, {
+          status: isResolve ? 'resolved' : 'reviewed',
+          notes: isResolve
+            ? 'Content removed and user warned'
+            : 'Report dismissed',
+        });
+        toast.success(
+          `Report ${isResolve ? 'resolved' : 'dismissed'} successfully`
+        );
+        navigate('/admin/reports');
+      } catch (error) {
+        console.error('Failed to process report:', error);
+        toast.error('Failed to process report');
+      }
+    }
   };
+
+  if (loading) {
+    return <div className="p-12 text-center text-white">Loading report...</div>;
+  }
+
+  if (!reportData) {
+    return (
+      <div className="p-12 text-center text-white">
+        Report not found or failed to load.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -53,7 +89,8 @@ const AdminReportReview: React.FC = () => {
             Review Report
           </h1>
           <p className="text-light-grey text-lg font-medium opacity-60">
-            Report {id || reportData.id} • {reportData.date}
+            Report #{reportData.id.slice(0, 8)} •{' '}
+            {new Date(reportData.createdAt).toLocaleString()}
           </p>
         </div>
       </div>
@@ -70,7 +107,7 @@ const AdminReportReview: React.FC = () => {
                 Report Details
               </h2>
               <p className="text-light-grey text-sm opacity-60">
-                Reported by {reportData.reporter}
+                Reported by {reportData.reporter?.username || 'Anonymous'}
               </p>
             </div>
           </div>
@@ -82,7 +119,7 @@ const AdminReportReview: React.FC = () => {
                   Report Type
                 </p>
                 <p className="text-white font-bold text-lg">
-                  {reportData.type}
+                  {reportData.contentType}
                 </p>
               </div>
               <div>
@@ -96,23 +133,30 @@ const AdminReportReview: React.FC = () => {
             </div>
             <div>
               <p className="text-xs font-black text-[#a0a0a0] uppercase tracking-widest mb-2 opacity-40">
-                Description
+                Description / Notes
               </p>
               <p className="text-light-grey leading-relaxed font-medium">
-                {reportData.description}
+                {reportData.notes || 'No additional notes.'}
               </p>
             </div>
           </div>
 
           <div className="mt-8 pt-6 border-t border-white/5">
             <p className="text-xs font-black text-[#a0a0a0] uppercase tracking-widest mb-2 opacity-40">
-              Reported Date
+              Report Status
             </p>
-            <p className="text-[#a0a0a0] font-bold">{reportData.date}</p>
+            <p
+              className={`font-bold ${
+                reportData.status === 'pending'
+                  ? 'text-yellow-500'
+                  : 'text-green-500'
+              }`}>
+              {reportData.status.toUpperCase()}
+            </p>
           </div>
         </div>
 
-        {/* Reported Content */}
+        {/* Reported Content - Placeholder for generic content display */}
         <div className="bg-[#333333] rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden p-8">
           <div className="flex items-start gap-4 mb-8">
             <div className="p-4 bg-[#49b99f]/10 rounded-2xl">
@@ -120,88 +164,21 @@ const AdminReportReview: React.FC = () => {
             </div>
             <div>
               <h2 className="text-xl font-black text-white uppercase tracking-tight mb-1">
-                Reported Content
+                Reported Content ID
               </h2>
+              <p className="text-light-grey text-sm opacity-60">
+                {reportData.contentId}
+              </p>
             </div>
           </div>
 
           <div className="bg-[#252525] rounded-3xl p-8 border border-white/5 mb-8">
-            <h3 className="text-xl font-black text-white mb-6 underline decoration-[#49b99f]/30 underline-offset-8">
-              {reportData.content.title}
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              <div>
-                <div className="mb-6">
-                  <p className="text-xs font-black text-[#a0a0a0] uppercase tracking-widest mb-2 opacity-30">
-                    Submitted By
-                  </p>
-                  <p className="text-white font-black">
-                    {reportData.content.submittedBy}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-black text-[#a0a0a0] uppercase tracking-widest mb-2 opacity-30">
-                    Price
-                  </p>
-                  <p className="text-[#49b99f] font-black text-xl">
-                    {reportData.content.price}
-                  </p>
-                </div>
-              </div>
-              <div>
-                <div className="mb-6">
-                  <p className="text-xs font-black text-[#a0a0a0] uppercase tracking-widest mb-2 opacity-30">
-                    Date
-                  </p>
-                  <p className="text-white font-bold">
-                    {reportData.content.date}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-black text-[#a0a0a0] uppercase tracking-widest mb-2 opacity-30">
-                    URL
-                  </p>
-                  <a
-                    href={reportData.content.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-red-400 font-bold hover:underline flex items-center gap-2">
-                    {reportData.content.url}
-                    <FiExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-black text-[#a0a0a0] uppercase tracking-widest mb-2 opacity-30">
-                Description
-              </p>
-              <p className="text-light-grey leading-relaxed font-black">
-                {reportData.content.description}
-              </p>
-            </div>
-          </div>
-
-          {/* Warning Signs */}
-          <div className="bg-red-500/80 rounded-3xl p-8 border border-white/10 shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              <FiAlertTriangle className="w-6 h-6 text-white" />
-              <h4 className="text-lg font-black text-white uppercase tracking-tight">
-                Warning Signs Detected
-              </h4>
-            </div>
-            <ul className="space-y-3">
-              {reportData.warningSigns.map((sign, index) => (
-                <li
-                  key={index}
-                  className="flex items-center gap-3 text-white font-bold text-sm">
-                  <span className="w-1.5 h-1.5 bg-white rounded-full shrink-0" />
-                  {sign}
-                </li>
-              ))}
-            </ul>
+            <p className="text-white">
+              Content details would be fetched here based on{' '}
+              <code>{reportData.contentType}</code> and ID{' '}
+              <code>{reportData.contentId}</code>.
+            </p>
+            {/* In a real scenario, you'd fetch the specific deal/comment/user details here */}
           </div>
         </div>
 
@@ -212,11 +189,15 @@ const AdminReportReview: React.FC = () => {
           </h2>
 
           <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <Button className="flex-1 bg-red-500 hover:bg-red-600 text-white font-black uppercase tracking-widest h-16 rounded-2xl gap-3 shadow-xl shadow-red-500/20 border-0 transition-transform hover:-translate-y-1">
+            <Button
+              onClick={() => handleAction('resolve')}
+              className="flex-1 bg-red-500 hover:bg-red-600 text-white font-black uppercase tracking-widest h-16 rounded-2xl gap-3 shadow-xl shadow-red-500/20 border-0 transition-transform hover:-translate-y-1">
               <FiCheck className="w-6 h-6" />
               Delete Content & Suspend User
             </Button>
-            <Button className="flex-1 bg-[#252525] hover:bg-[#2a2a2a] text-[#a0a0a0] hover:text-white font-black uppercase tracking-widest h-16 rounded-2xl gap-3 border border-white/5 transition-transform hover:-translate-y-1">
+            <Button
+              onClick={() => handleAction('dismiss')}
+              className="flex-1 bg-[#252525] hover:bg-[#2a2a2a] text-[#a0a0a0] hover:text-white font-black uppercase tracking-widest h-16 rounded-2xl gap-3 border border-white/5 transition-transform hover:-translate-y-1">
               <FiX className="w-6 h-6" />
               Dismiss Report
             </Button>

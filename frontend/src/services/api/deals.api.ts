@@ -72,7 +72,20 @@ export async function getDeals(
 
   // Real API call (when backend is ready)
   const response = await apiClient.get<PaginatedResponse<Deal>>('/deals', {
-    params: { page, limit, sort, search },
+    params: {
+      page,
+      limit,
+      sort,
+      search,
+      category: params.category,
+      store: params.store,
+      minPrice: params.minPrice,
+      maxPrice: params.maxPrice,
+      minDiscount: params.minDiscount,
+      isVerified: params.isVerified,
+      isExpiringSoon: params.isExpiringSoon,
+      freeDelivery: params.freeDelivery,
+    },
   });
   return response.data;
 }
@@ -80,7 +93,7 @@ export async function getDeals(
 /**
  * Fetch a single deal by ID
  */
-export async function getDealById(id: number): Promise<Deal | null> {
+export async function getDealById(id: string | number): Promise<Deal | null> {
   if (API_CONFIG.USE_MOCK_DATA) {
     await mockDelay(200);
     return MOCK_DEALS.find((deal) => deal.id === id) || null;
@@ -106,5 +119,36 @@ export async function createDeal(dealData: any): Promise<Deal> {
   }
 
   const response = await apiClient.post<Deal>('/deals', dealData);
+  return response.data;
+}
+
+/**
+ * Vote on a deal (hot or cold)
+ */
+export async function voteDeal(
+  dealId: string | number,
+  type: 'hot' | 'cold'
+): Promise<{ action: string; temperature: number }> {
+  if (API_CONFIG.USE_MOCK_DATA) {
+    await mockDelay(300);
+    return { action: 'created', temperature: 100 };
+  }
+
+  const response = await apiClient.post(`/deals/${dealId}/vote`, { type });
+  return response.data;
+}
+
+/**
+ * Get current user vote status for a deal
+ */
+export async function getVoteStatus(
+  dealId: string | number
+): Promise<{ type: 'hot' | 'cold' | null }> {
+  if (API_CONFIG.USE_MOCK_DATA) {
+    await mockDelay(200);
+    return { type: null };
+  }
+
+  const response = await apiClient.get(`/deals/${dealId}/vote/status`);
   return response.data;
 }

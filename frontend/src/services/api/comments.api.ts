@@ -8,7 +8,10 @@ const mockDelay = (ms: number = 500) =>
 /**
  * Post a new comment on a deal
  */
-export async function postComment(dealId: number, text: string): Promise<any> {
+export async function postComment(
+  dealId: string | number,
+  text: string
+): Promise<any> {
   if (API_CONFIG.USE_MOCK_DATA) {
     await mockDelay(400);
     return {
@@ -30,7 +33,7 @@ export async function postComment(dealId: number, text: string): Promise<any> {
  * Update an existing comment
  */
 export async function updateComment(
-  commentId: number,
+  commentId: string | number,
   text: string
 ): Promise<any> {
   if (API_CONFIG.USE_MOCK_DATA) {
@@ -45,7 +48,7 @@ export async function updateComment(
 /**
  * Delete a comment
  */
-export async function deleteComment(commentId: number): Promise<any> {
+export async function deleteComment(commentId: string | number): Promise<any> {
   if (API_CONFIG.USE_MOCK_DATA) {
     await mockDelay(300);
     return { success: true };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FiActivity,
   FiThumbsUp,
@@ -7,15 +7,11 @@ import {
   FiAlertCircle,
   FiInfo,
   FiUpload,
-  FiShare2,
-  FiFacebook,
-  FiTwitter,
-  FiLinkedin,
-  FiHash,
 } from 'react-icons/fi';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { getAdminSettings, updateSetting } from '@/services/api/admin.api';
 
 interface SettingSectionProps {
   title: string;
@@ -104,37 +100,60 @@ const UploadBox = ({ label }: { label: string }) => (
   </div>
 );
 
-const SocialInput = ({ icon: Icon, label }: { icon: any; label: string }) => (
-  <div className="space-y-3">
-    <label className="text-xs font-black uppercase tracking-widest text-[#a0a0a0] flex items-center gap-2 opacity-60">
-      <Icon className="w-4 h-4" /> {label}
-    </label>
-    <Input
-      placeholder={`Your ${label} link`}
-      className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-medium"
-    />
-  </div>
-);
+import { toast } from 'react-hot-toast';
 
 const AdminSettings: React.FC = () => {
-  const [settings, setSettings] = useState({
-    dealsEnabled: true,
-    couponsEnabled: true,
-    maintenanceMode: false,
-    hotDealThreshold: 100,
-    voteCooldown: 24,
-    whoCanVote: 'all',
-    autoApproveVerified: true,
-    publicRegistration: true,
-    platformName: 'Waferlee',
-    contactEmail: 'admin@waferlee.com',
-    supportEmail: 'support@waferlee.com',
-    moderationEmail: 'moderation@waferlee.com',
+  const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<any>({
+    deals_enabled: 'true',
+    coupons_enabled: 'true',
+    maintenance_mode: 'false',
+    hot_deal_threshold: '100',
+    vote_cooldown: '24',
+    who_can_vote: 'all',
+    auto_approve_verified: 'true',
+    public_registration: 'true',
+    platform_name: 'Waferlee',
+    contact_email: 'admin@waferlee.com',
+    comment_moderation: 'false',
+    support_email: 'support@waferlee.com',
+    moderation_email: 'moderation@waferlee.com',
   });
 
-  const handleSave = () => {
-    console.log('Saving settings:', settings);
-    // Add toast or success message here
+  const fetchSettings = async () => {
+    setLoading(true);
+    try {
+      const data = await getAdminSettings();
+      const mapped = { ...settings };
+      data.forEach((s: any) => {
+        mapped[s.key] = s.value;
+      });
+      setSettings(mapped);
+    } catch (error) {
+      console.error('Failed to fetch admin settings:', error);
+      toast.error('Failed to load settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      const promises = Object.entries(settings).map(([key, value]) =>
+        updateSetting(key, value)
+      );
+      await Promise.all(promises);
+      toast.success('Settings saved successfully');
+    } catch (error) {
+      toast.error('Failed to save settings');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -151,9 +170,10 @@ const AdminSettings: React.FC = () => {
         </div>
         <Button
           onClick={handleSave}
+          disabled={loading}
           className="bg-[#49b99f] hover:bg-[#49b99f]/90 text-white font-black uppercase tracking-widest rounded-2xl px-10 h-14 shadow-xl shadow-[#49b99f]/20 gap-3 border-0 transition-all hover:-translate-y-1">
           <FiSave className="w-6 h-6" />
-          Save Changes
+          {loading ? 'Saving...' : 'Save Changes'}
         </Button>
       </div>
 
@@ -167,27 +187,36 @@ const AdminSettings: React.FC = () => {
             <ToggleField
               label="Deals Section"
               description="Enable or disable the entire Deals catalog. If disabled, navigation links will be hidden from the public."
-              enabled={settings.dealsEnabled}
+              enabled={settings.deals_enabled === 'true'}
               onChange={(val) =>
-                setSettings({ ...settings, dealsEnabled: val })
+                setSettings({
+                  ...settings,
+                  deals_enabled: val ? 'true' : 'false',
+                })
               }
             />
             <div className="h-px bg-white/5" />
             <ToggleField
               label="Coupons Section"
               description="Toggle the visibility of the Coupons tab and individual coupon codes across the site."
-              enabled={settings.couponsEnabled}
+              enabled={settings.coupons_enabled === 'true'}
               onChange={(val) =>
-                setSettings({ ...settings, couponsEnabled: val })
+                setSettings({
+                  ...settings,
+                  coupons_enabled: val ? 'true' : 'false',
+                })
               }
             />
             <div className="h-px bg-white/5" />
             <ToggleField
               label="Maintenance Mode"
               description="Restrict site access to administrators only. Visitors will see a maintenance message."
-              enabled={settings.maintenanceMode}
+              enabled={settings.maintenance_mode === 'true'}
               onChange={(val) =>
-                setSettings({ ...settings, maintenanceMode: val })
+                setSettings({
+                  ...settings,
+                  maintenance_mode: val ? 'true' : 'false',
+                })
               }
             />
           </SettingSection>
@@ -204,11 +233,11 @@ const AdminSettings: React.FC = () => {
                 </label>
                 <Input
                   type="number"
-                  value={settings.hotDealThreshold}
+                  value={settings.hot_deal_threshold}
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      hotDealThreshold: parseInt(e.target.value),
+                      hot_deal_threshold: e.target.value,
                     })
                   }
                   className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
@@ -223,11 +252,11 @@ const AdminSettings: React.FC = () => {
                 </label>
                 <Input
                   type="number"
-                  value={settings.voteCooldown}
+                  value={settings.vote_cooldown}
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      voteCooldown: parseInt(e.target.value),
+                      vote_cooldown: e.target.value,
                     })
                   }
                   className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
@@ -238,7 +267,21 @@ const AdminSettings: React.FC = () => {
               </div>
             </div>
 
-            <div className="h-px bg-white/5" />
+            <div className="h-px bg-white/5 my-6" />
+
+            <ToggleField
+              label="Comment Moderation"
+              description="Require admin approval for all new comments before they are visible to the public."
+              enabled={settings.comment_moderation === 'true'}
+              onChange={(val) =>
+                setSettings({
+                  ...settings,
+                  comment_moderation: val ? 'true' : 'false',
+                })
+              }
+            />
+
+            <div className="h-px bg-white/5 my-6" />
 
             <div className="space-y-3">
               <label className="text-xs font-black uppercase tracking-widest text-[#49b99f]">
@@ -253,11 +296,11 @@ const AdminSettings: React.FC = () => {
                   <button
                     key={opt.id}
                     onClick={() =>
-                      setSettings({ ...settings, whoCanVote: opt.id })
+                      setSettings({ ...settings, who_can_vote: opt.id })
                     }
                     className={cn(
                       'flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all',
-                      settings.whoCanVote === opt.id
+                      settings.who_can_vote === opt.id
                         ? 'bg-[#49b99f] text-white shadow-lg'
                         : 'text-light-grey hover:text-white'
                     )}>
@@ -276,18 +319,24 @@ const AdminSettings: React.FC = () => {
             <ToggleField
               label="Public Registration"
               description="Allow new users to sign up without an invite code or manual approval."
-              enabled={settings.publicRegistration}
+              enabled={settings.public_registration === 'true'}
               onChange={(val) =>
-                setSettings({ ...settings, publicRegistration: val })
+                setSettings({
+                  ...settings,
+                  public_registration: val ? 'true' : 'false',
+                })
               }
             />
             <div className="h-px bg-white/5" />
             <ToggleField
               label="Auto-approve Verified Posts"
               description="Deals posted by level 2+ users bypass the moderation queue."
-              enabled={settings.autoApproveVerified}
+              enabled={settings.auto_approve_verified === 'true'}
               onChange={(val) =>
-                setSettings({ ...settings, autoApproveVerified: val })
+                setSettings({
+                  ...settings,
+                  auto_approve_verified: val ? 'true' : 'false',
+                })
               }
             />
           </SettingSection>
@@ -303,9 +352,9 @@ const AdminSettings: React.FC = () => {
                 Platform Name
               </label>
               <Input
-                value={settings.platformName}
+                value={settings.platform_name}
                 onChange={(e) =>
-                  setSettings({ ...settings, platformName: e.target.value })
+                  setSettings({ ...settings, platform_name: e.target.value })
                 }
                 className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
               />
@@ -319,9 +368,9 @@ const AdminSettings: React.FC = () => {
                 Contact Email
               </label>
               <Input
-                value={settings.contactEmail}
+                value={settings.contact_email}
                 onChange={(e) =>
-                  setSettings({ ...settings, contactEmail: e.target.value })
+                  setSettings({ ...settings, contact_email: e.target.value })
                 }
                 className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
               />
@@ -347,9 +396,9 @@ const AdminSettings: React.FC = () => {
                 Support Email
               </label>
               <Input
-                value={settings.supportEmail}
+                value={settings.support_email}
                 onChange={(e) =>
-                  setSettings({ ...settings, supportEmail: e.target.value })
+                  setSettings({ ...settings, support_email: e.target.value })
                 }
                 className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
               />
@@ -363,32 +412,15 @@ const AdminSettings: React.FC = () => {
                 Moderation Email
               </label>
               <Input
-                value={settings.moderationEmail}
+                value={settings.moderation_email}
                 onChange={(e) =>
-                  setSettings({ ...settings, moderationEmail: e.target.value })
+                  setSettings({ ...settings, moderation_email: e.target.value })
                 }
                 className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
               />
               <p className="text-xs text-light-grey opacity-40">
                 Email for moderation-related notifications
               </p>
-            </div>
-          </div>
-
-          {/* Social Media */}
-          <div className="bg-[#333333] rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden p-8">
-            <div className="flex items-center gap-3 mb-8">
-              <FiShare2 className="w-6 h-6 text-white" />
-              <h3 className="text-2xl font-black text-white tracking-tight uppercase">
-                Social Media
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <SocialInput icon={FiFacebook} label="Facebook" />
-              <SocialInput icon={FiTwitter} label="Twitter" />
-              <SocialInput icon={FiLinkedin} label="LinkedIn" />
-              <SocialInput icon={FiHash} label="Ex" />
             </div>
           </div>
         </div>
@@ -413,10 +445,10 @@ const AdminSettings: React.FC = () => {
                 Last Updated
               </h5>
               <p className="text-xs text-[#49b99f] font-medium">
-                Dec 25, 2025 - 03:48 AM
+                {new Date().toLocaleString()}
               </p>
               <p className="text-[10px] text-light-grey opacity-40 mt-1">
-                by Admin: Belal Najy
+                by Admin: System
               </p>
             </div>
           </div>

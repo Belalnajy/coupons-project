@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   FiArrowLeft,
@@ -10,29 +10,96 @@ import {
   FiCalendar,
   FiToggleLeft,
   FiToggleRight,
+  FiUpload,
 } from 'react-icons/fi';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  getAdminBanner,
+  createBanner,
+  updateBanner,
+} from '@/services/api/admin.api';
+import { uploadImage } from '@/services/api/upload.api';
+import { toast } from 'react-hot-toast';
 
 const AdminBannerForm: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     title: '',
     imageUrl: '',
-    overlayText: '',
-    link: '',
-    placement: 'Home Top',
-    status: 'Draft',
+    subtitle: '',
+    targetUrl: '',
+    placement: 'home_top',
+    status: 'active',
     startDate: '',
     endDate: '',
+    sortOrder: 0,
   });
+  const [loading, setLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleSave = () => {
-    console.log('Saving banner:', formData);
-    navigate('/admin/content');
+  useEffect(() => {
+    if (id) {
+      setLoading(true);
+      getAdminBanner(id)
+        .then((data) => {
+          setFormData({
+            title: data.title,
+            imageUrl: data.imageUrl,
+            subtitle: data.subtitle || '',
+            targetUrl: data.targetUrl || '',
+            placement: data.placement,
+            status: data.status,
+            startDate: data.startDate?.split('T')[0] || '',
+            endDate: data.endDate?.split('T')[0] || '',
+            sortOrder: data.sortOrder,
+          });
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [id]);
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      if (id) {
+        await updateBanner(id, formData);
+        toast.success('Banner updated successfully');
+      } else {
+        await createBanner(formData);
+        toast.success('Banner created successfully');
+      }
+      navigate('/admin/content');
+    } catch (error) {
+      toast.error('Failed to save banner');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image size must be less than 2MB');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const result = await uploadImage(file, 'banners');
+      setFormData({ ...formData, imageUrl: result.url });
+      toast.success('Image uploaded successfully');
+    } catch (error) {
+      toast.error('Failed to upload image');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -56,9 +123,10 @@ const AdminBannerForm: React.FC = () => {
         </div>
         <Button
           onClick={handleSave}
+          disabled={loading || isUploading}
           className="bg-[#49b99f] hover:bg-[#49b99f]/90 text-white font-black uppercase tracking-widest rounded-2xl px-10 h-14 shadow-xl shadow-[#49b99f]/20 gap-3 border-0 transition-all hover:-translate-y-1">
           <FiSave className="w-6 h-6" />
-          Save Banner
+          {loading ? 'Saving...' : 'Save Banner'}
         </Button>
       </div>
 
@@ -86,16 +154,34 @@ const AdminBannerForm: React.FC = () => {
 
             <div className="space-y-3">
               <label className="text-xs font-black uppercase tracking-widest text-[#a0a0a0] flex items-center gap-2 opacity-60">
-                <FiImage className="w-3" /> Image URL
+                <FiImage className="w-3" /> Banner Image
               </label>
-              <Input
-                placeholder="https://..."
-                value={formData.imageUrl}
-                onChange={(e) =>
-                  setFormData({ ...formData, imageUrl: e.target.value })
-                }
-                className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-medium"
-              />
+              <div className="flex gap-4">
+                <Input
+                  placeholder="https://..."
+                  value={formData.imageUrl}
+                  onChange={(e) =>
+                    setFormData({ ...formData, imageUrl: e.target.value })
+                  }
+                  className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-medium flex-1"
+                />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="h-14 bg-white/5 hover:bg-white/10 text-white border-white/5 px-6 rounded-2xl gap-2 font-bold uppercase tracking-wider text-xs">
+                  <FiUpload
+                    className={cn('w-4 h-4', isUploading && 'animate-bounce')}
+                  />
+                  {isUploading ? 'Uploading...' : 'Upload'}
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -104,9 +190,9 @@ const AdminBannerForm: React.FC = () => {
               </label>
               <Input
                 placeholder="Text to display on top of image"
-                value={formData.overlayText}
+                value={formData.subtitle}
                 onChange={(e) =>
-                  setFormData({ ...formData, overlayText: e.target.value })
+                  setFormData({ ...formData, subtitle: e.target.value })
                 }
                 className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-medium"
               />
@@ -119,9 +205,9 @@ const AdminBannerForm: React.FC = () => {
                 </label>
                 <Input
                   placeholder="/offers/..."
-                  value={formData.link}
+                  value={formData.targetUrl}
                   onChange={(e) =>
-                    setFormData({ ...formData, link: e.target.value })
+                    setFormData({ ...formData, targetUrl: e.target.value })
                   }
                   className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-medium"
                 />
@@ -135,11 +221,11 @@ const AdminBannerForm: React.FC = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, placement: e.target.value })
                   }
-                  className="w-full h-14 bg-[#1a1a1a] border border-white/5 rounded-2xl px-6 text-white focus:ring-1 focus:ring-[#49b99f]/30 font-bold outline-none appearance-none">
-                  <option>Home Top</option>
-                  <option>Deals Top</option>
-                  <option>Sidebar</option>
-                  <option>Category Page</option>
+                  className="w-full h-14 bg-[#1a1a1a] border border-white/5 rounded-2xl px-6 text-white focus:ring-1 focus:ring-[#49b99f]/30 font-bold outline-none appearance-none cursor-pointer">
+                  <option value="home_top">Home Top</option>
+                  <option value="deals_top">Deals Top</option>
+                  <option value="sidebar">Sidebar</option>
+                  <option value="category_page">Category Page</option>
                 </select>
               </div>
             </div>
@@ -155,16 +241,16 @@ const AdminBannerForm: React.FC = () => {
                 onClick={() =>
                   setFormData({
                     ...formData,
-                    status: formData.status === 'Active' ? 'Draft' : 'Active',
+                    status: formData.status === 'active' ? 'draft' : 'active',
                   })
                 }
                 className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest border transition-all',
-                  formData.status === 'Active'
+                  'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest border transition-all cursor-pointer',
+                  formData.status === 'active'
                     ? 'bg-[#49b99f]/10 text-[#49b99f] border-[#49b99f]/20'
                     : 'bg-white/5 text-light-grey border-white/5'
                 )}>
-                {formData.status === 'Active' ? (
+                {formData.status === 'active' ? (
                   <FiToggleRight className="w-4 h-4" />
                 ) : (
                   <FiToggleLeft className="w-4 h-4" />
@@ -221,7 +307,7 @@ const AdminBannerForm: React.FC = () => {
                   />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-6 text-center">
                     <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter drop-shadow-xl">
-                      {formData.overlayText || 'Your Text Here'}
+                      {formData.subtitle || 'Your Text Here'}
                     </h2>
                   </div>
                 </div>

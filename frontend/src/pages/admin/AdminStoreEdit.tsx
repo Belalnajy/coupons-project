@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   FiArrowLeft,
@@ -7,68 +7,99 @@ import {
   FiLink,
   FiInfo,
   FiImage,
-  FiGrid,
   FiCheckCircle,
   FiPlus,
   FiX,
+  FiUpload,
 } from 'react-icons/fi';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  getAdminStore,
+  createStore,
+  updateStore,
+} from '@/services/api/admin.api';
+import { uploadImage } from '@/services/api/upload.api';
+import { toast } from 'react-hot-toast';
 
 const AdminStoreEdit: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
   const [formData, setFormData] = useState({
     name: '',
     websiteUrl: '',
-    status: 'Active' as 'Active' | 'Disabled',
+    status: 'active' as 'active' | 'disabled',
     description: '',
-    category: 'Electronics',
     logoUrl: '',
   });
 
+  const [loading, setLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  // Mock fetching data if editing
   useEffect(() => {
-    if (isEdit) {
-      // Simulate API fetch
-      setFormData({
-        name: 'Amazon',
-        websiteUrl: 'https://www.amazon.co.uk',
-        status: 'Disabled',
-        description:
-          "The world's largest online retailer providing a vast selection of electronics, books, and more.",
-        category: 'Marketplace',
-        logoUrl:
-          'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg',
-      });
-      setLogoPreview(
-        'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg'
-      );
+    if (isEdit && id) {
+      setLoading(true);
+      getAdminStore(id)
+        .then((data) => {
+          setFormData({
+            name: data.name,
+            websiteUrl: data.websiteUrl || '',
+            status: data.status,
+            description: data.description || '',
+            logoUrl: data.logoUrl || '',
+          });
+          setLogoPreview(data.logoUrl || null);
+        })
+        .finally(() => setLoading(false));
     }
-  }, [isEdit]);
+  }, [id, isEdit]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate API call
-    console.log('Saving store data:', formData);
-    // Success feedback (would usually be a toast)
-    navigate('/admin/stores');
+    try {
+      setLoading(true);
+      if (isEdit && id) {
+        await updateStore(id, formData);
+        toast.success('Store updated successfully');
+      } else {
+        await createStore(formData);
+        toast.success('Store created successfully');
+      }
+      navigate('/admin/stores');
+    } catch (error) {
+      toast.error('Failed to save store');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const categories = [
-    'Electronics',
-    'Fashion',
-    'Home & Garden',
-    'Marketplace',
-    'Health & Beauty',
-    'Travel',
-  ];
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 1024 * 1024) {
+      toast.error('Image size must be less than 1MB');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const result = await uploadImage(file, 'stores');
+      setFormData({ ...formData, logoUrl: result.url });
+      setLogoPreview(result.url);
+      toast.success('Logo uploaded successfully');
+    } catch (error) {
+      toast.error('Failed to upload logo');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-1000">
@@ -101,8 +132,9 @@ const AdminStoreEdit: React.FC = () => {
           </Button>
           <Button
             onClick={handleSubmit}
+            disabled={loading || isUploading}
             className="bg-[#49b99f] hover:bg-[#49b99f]/90 text-white h-12 rounded-xl px-8 font-black uppercase tracking-widest text-xs shadow-lg shadow-[#49b99f]/20">
-            Finalize Store
+            {loading ? 'Processing...' : 'Finalize Store'}
           </Button>
         </div>
       </div>
@@ -118,7 +150,12 @@ const AdminStoreEdit: React.FC = () => {
             </h3>
 
             <div className="space-y-6">
-              <div className="aspect-square bg-[#1a1a1a] rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center p-4 relative group overflow-hidden">
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className={cn(
+                  'aspect-square bg-[#1a1a1a] rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center p-4 relative group overflow-hidden cursor-pointer hover:border-[#49b99f]/50 transition-colors',
+                  isUploading && 'opacity-50 pointer-events-none'
+                )}>
                 {logoPreview ? (
                   <>
                     <img
@@ -126,29 +163,45 @@ const AdminStoreEdit: React.FC = () => {
                       alt="Preview"
                       className="w-full h-full object-contain p-4 transition-transform group-hover:scale-105"
                     />
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <FiUpload className="text-white w-8 h-8" />
+                    </div>
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setLogoPreview(null);
                         setFormData((f) => ({ ...f, logoUrl: '' }));
                       }}
-                      className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                      className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-lg text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-10">
                       <FiX />
                     </button>
                   </>
                 ) : (
                   <div className="text-center space-y-2">
                     <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <FiPlus className="text-[#49b99f] w-6 h-6" />
+                      <FiPlus
+                        className={cn(
+                          'text-[#49b99f] w-6 h-6',
+                          isUploading && 'animate-bounce'
+                        )}
+                      />
                     </div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-light-grey">
-                      Upload Logo
+                      {isUploading ? 'Uploading...' : 'Upload Logo'}
                     </p>
                     <p className="text-[8px] text-light-grey/40">
-                      PNG, SVG up to 2MB
+                      PNG, SVG up to 1MB
                     </p>
                   </div>
                 )}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
               </div>
 
               <div className="space-y-2">
@@ -168,7 +221,7 @@ const AdminStoreEdit: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-linear-to-br from-[#49b99f]/20 to-transparent rounded-3xl p-8 border border-[#49b99f]/10 shadow-xl">
+          <div className="bg-[#49b99f]/10 rounded-3xl p-8 border border-[#49b99f]/10 shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <FiCheckCircle className="text-[#49b99f] w-5 h-5" />
               <h4 className="text-sm font-black text-white uppercase tracking-tight">
@@ -192,7 +245,7 @@ const AdminStoreEdit: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Name */}
-              <div className="space-y-3">
+              <div className="space-y-3 md:col-span-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-light-grey flex items-center gap-2">
                   <FiShoppingCart className="w-3" /> Partner Name
                 </label>
@@ -205,25 +258,6 @@ const AdminStoreEdit: React.FC = () => {
                   className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
                   required
                 />
-              </div>
-
-              {/* Category */}
-              <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-light-grey flex items-center gap-2">
-                  <FiGrid className="w-3" /> Core Category
-                </label>
-                <select
-                  value={formData.category}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
-                  className="w-full h-14 bg-[#1a1a1a] border border-white/5 rounded-2xl px-6 text-white font-bold outline-none cursor-pointer focus:border-[#49b99f]/50 transition-colors">
-                  {categories.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               {/* Website URL */}
@@ -264,7 +298,7 @@ const AdminStoreEdit: React.FC = () => {
                   Market Visibility
                 </label>
                 <div className="flex bg-[#1a1a1a] p-1.5 rounded-2xl border border-white/5">
-                  {['Active', 'Disabled'].map((status) => (
+                  {['active', 'disabled'].map((status) => (
                     <button
                       key={status}
                       type="button"
@@ -272,9 +306,9 @@ const AdminStoreEdit: React.FC = () => {
                         setFormData({ ...formData, status: status as any })
                       }
                       className={cn(
-                        'flex-1 h-12 rounded-xl text-xs font-black uppercase tracking-widest transition-all',
+                        'flex-1 h-12 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer',
                         formData.status === status
-                          ? status === 'Active'
+                          ? status === 'active'
                             ? 'bg-[#49b99f] text-white shadow-lg'
                             : 'bg-red-500 text-white shadow-lg'
                           : 'text-light-grey hover:text-white'
@@ -290,15 +324,20 @@ const AdminStoreEdit: React.FC = () => {
           <div className="flex gap-4">
             <Button
               type="submit"
+              disabled={loading || isUploading}
               className="flex-1 h-16 bg-[#49b99f] hover:bg-[#49b99f]/90 text-white font-black uppercase tracking-widest rounded-2xl gap-3 text-sm cursor-pointer border-0 shadow-2xl shadow-[#49b99f]/30">
               <FiSave className="w-5 h-5" />
-              {isEdit ? 'Sync Changes to Cloud' : 'Initiate Store Launch'}
+              {loading
+                ? 'Processing...'
+                : isEdit
+                ? 'Sync Changes to Cloud'
+                : 'Initiate Store Launch'}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => navigate('/admin/stores')}
-              className="h-16 border-white/5 bg-[#2c2c2c] text-light-grey hover:bg-[#333] hover:text-white px-10 rounded-2xl uppercase tracking-widest font-black text-xs">
+              className="h-16 border-white/5 bg-[#2c2c2c] text-light-grey hover:bg-[#333] hover:text-white px-10 rounded-2xl uppercase tracking-widest font-black text-xs cursor-pointer">
               Abort
             </Button>
           </div>

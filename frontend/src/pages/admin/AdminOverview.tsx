@@ -1,48 +1,46 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatCard } from '@/components/features/admin/StatCard';
 import {
   ActivityItem,
   type ActivityType,
 } from '@/components/features/admin/ActivityItem';
-import { FiPackage, FiClock, FiTag, FiUsers } from 'react-icons/fi';
+import {
+  FiPackage,
+  FiClock,
+  FiTag,
+  FiUsers,
+  FiAlertCircle,
+  FiShoppingCart,
+} from 'react-icons/fi';
+import { getAdminStats } from '@/services/api/admin.api';
 
-interface MockActivity {
-  id: string;
-  type: ActivityType;
-  title: string;
-  user: string;
-  description: string;
-  timestamp: string;
+interface Stats {
+  totalDeals: number;
+  activeDeals: number;
+  pendingDeals: number;
+  totalUsers: number;
+  pendingReports: number;
+  totalStores: number;
 }
 
-const MOCK_ACTIVITIES: MockActivity[] = [
-  {
-    id: '1',
-    type: 'submission',
-    title: 'New deal submitted',
-    user: 'DealsHunter123',
-    description: 'Samsung Galaxy S24 Ultra - 50% Off',
-    timestamp: '5 minutes ago',
-  },
-  {
-    id: '2',
-    type: 'approval',
-    title: 'Deal approved',
-    user: 'Admin',
-    description: 'Apple AirPods Pro 2 - 35% Discount',
-    timestamp: '12 minutes ago',
-  },
-  {
-    id: '3',
-    type: 'submission',
-    title: 'New deal submitted',
-    user: 'DealMaster',
-    description: 'Nike Air Max 2024 - 40% Voucher',
-    timestamp: '45 minutes ago',
-  },
-];
-
 const AdminOverview: React.FC = () => {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const data = await getAdminStats();
+        setStats(data);
+      } catch (error) {
+        console.error('Failed to fetch admin stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStats();
+  }, []);
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
@@ -59,38 +57,57 @@ const AdminOverview: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           label="Total Deals"
-          value={1247}
-          trend={12}
+          value={loading ? '...' : stats?.totalDeals || 0}
           icon={FiPackage}
         />
-        <StatCard label="Pending Deals" value={23} trend={-5} icon={FiClock} />
-        <StatCard label="Active Coupons" value={89} trend={3} icon={FiTag} />
-        <StatCard label="Total Users" value={4582} trend={18} icon={FiUsers} />
+        <StatCard
+          label="Pending Deals"
+          value={loading ? '...' : stats?.pendingDeals || 0}
+          icon={FiClock}
+        />
+        <StatCard
+          label="Pending Reports"
+          value={loading ? '...' : stats?.pendingReports || 0}
+          icon={FiAlertCircle}
+        />
+        <StatCard
+          label="Total Users"
+          value={loading ? '...' : stats?.totalUsers || 0}
+          icon={FiUsers}
+        />
       </div>
 
-      {/* Activity Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+        <StatCard
+          label="Active Deals"
+          value={loading ? '...' : stats?.activeDeals || 0}
+          icon={FiTag}
+        />
+        <StatCard
+          label="Total Stores"
+          value={loading ? '...' : stats?.totalStores || 0}
+          icon={FiShoppingCart}
+        />
+      </div>
+
+      {/* Activity Section Placeholder */}
       <div className="bg-[#2c2c2c] rounded-2xl border border-white/5 shadow-2xl overflow-hidden">
         <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
           <h2 className="text-xl font-black text-white tracking-tight uppercase">
-            Recent Activity
+            Platform Health
           </h2>
-          <button className="text-[10px] font-black uppercase tracking-widest text-[#49b99f] hover:underline cursor-pointer">
-            View All
-          </button>
         </div>
-        <div className="p-6">
-          <div className="space-y-2">
-            {MOCK_ACTIVITIES.map((activity) => (
-              <ActivityItem
-                key={activity.id}
-                type={activity.type}
-                title={activity.title}
-                user={activity.user}
-                description={activity.description}
-                timestamp={activity.timestamp}
-              />
-            ))}
+        <div className="p-12 flex flex-col items-center justify-center text-center">
+          <div className="w-16 h-16 rounded-full bg-green/10 flex items-center justify-center mb-4">
+            <FiTag className="text-green w-8 h-8" />
           </div>
+          <h3 className="text-white font-bold text-xl mb-2">
+            All Systems Operational
+          </h3>
+          <p className="text-light-grey max-w-sm">
+            Platform is running smoothly. Use the sidebar to manage content,
+            users, and reports.
+          </p>
         </div>
       </div>
     </div>

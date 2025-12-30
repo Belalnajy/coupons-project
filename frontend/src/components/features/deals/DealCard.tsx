@@ -1,14 +1,20 @@
-import React from 'react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { FiClock, FiMessageSquare, FiCheckCircle } from 'react-icons/fi';
+import {
+  FiClock,
+  FiMessageSquare,
+  FiCheckCircle,
+  FiFlag,
+} from 'react-icons/fi';
 import { FaFire } from 'react-icons/fa';
 import { IoTimerOutline } from 'react-icons/io5';
 import { Link } from 'react-router-dom';
+import { ReportModal } from '../reports/ReportModal';
 
 export interface DealProps {
-  id: number;
+  id: string | number;
   title: string;
   store: string;
   price: string;
@@ -23,6 +29,7 @@ export interface DealProps {
   heatScore?: number;
   storeIcon?: React.ReactNode;
   imageUrl?: string;
+  expiryDateFormatted?: string | null;
 }
 
 interface DealCardProps {
@@ -30,6 +37,8 @@ interface DealCardProps {
 }
 
 export function DealCard({ deal }: DealCardProps) {
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+
   return (
     <Card className="overflow-hidden bg-[#2a2a2a] border-0 hover:shadow-xl transition-all duration-300 p-0 rounded-2xl">
       {/* Deal Image */}
@@ -101,32 +110,56 @@ export function DealCard({ deal }: DealCardProps) {
               <FiMessageSquare className="w-4 h-4" />
               {deal.comments} comments
             </span>
-            <span className="flex items-center gap-1.5">
+            <span
+              className="flex items-center gap-1.5"
+              title={deal.expiryDateFormatted ? 'Expiry Date' : 'Date Posted'}>
               <FiClock className="w-4 h-4" />
-              {deal.timePosted}
+              {deal.expiryDateFormatted || deal.timePosted}
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-orange-400">
             <IoTimerOutline className="w-4 h-4" />
-            <span>Expires in {deal.timeLeft}</span>
+            <span>
+              {deal.timeLeft === 'Expired' || deal.timeLeft === 'No expiry'
+                ? deal.timeLeft
+                : `Expires in ${deal.timeLeft}`}
+            </span>
           </div>
         </div>
 
         {/* Posted By */}
         {deal.postedBy && (
-          <div className="text-sm text-gray-400 mb-4">
-            Posted by{' '}
-            <span className="text-white font-medium">{deal.postedBy}</span>
+          <div className="text-sm text-gray-400 mb-4 flex justify-between items-center">
+            <div>
+              Posted by{' '}
+              <span className="text-white font-medium">{deal.postedBy}</span>
+            </div>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                setReportModalOpen(true);
+              }}
+              className="text-xs text-light-grey hover:text-red-400 flex items-center gap-1 transition-colors"
+              title="Report this deal">
+              <FiFlag className="w-3 h-3" /> Report
+            </button>
           </div>
         )}
 
         {/* Get Deal Button */}
-        <Link
-          to={`/deals/${deal.id}`}
-          className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-6 rounded-xl text-lg transition-colors cursor-pointer">
-          Get Deal
-        </Link>
+        <Button
+          asChild
+          className="w-full bg-green hover:bg-green/90 text-white font-semibold py-6 rounded-xl text-lg transition-colors cursor-pointer">
+          <Link to={`/deals/${deal.id}`}>Get Deal</Link>
+        </Button>
       </div>
+
+      <ReportModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        contentType="deal"
+        contentId={String(deal.id)}
+      />
     </Card>
   );
 }

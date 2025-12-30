@@ -1,7 +1,7 @@
 // Shared types for API responses
 
 export interface Deal {
-  id: number;
+  id: string | number;
   title: string;
   store: string;
   price: string;
@@ -29,11 +29,13 @@ export interface Deal {
   };
   images?: string[];
   commentsList?: Comment[];
+  isVotingFrozen?: boolean;
 }
 
 export interface Comment {
-  id: number;
+  id: string | number;
   user: {
+    id: string;
     name: string;
     avatar?: string;
     badge?: string;
@@ -44,7 +46,7 @@ export interface Comment {
 }
 
 export interface Coupon {
-  id: number;
+  id: string | number;
   title: string;
   store: string;
   code: string;
@@ -68,6 +70,13 @@ export interface DealsQueryParams {
   sort?: 'popular' | 'newest' | 'hottest' | 'closing';
   search?: string;
   category?: string;
+  store?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  minDiscount?: number;
+  isVerified?: boolean;
+  isExpiringSoon?: boolean;
+  freeDelivery?: boolean;
 }
 
 export interface CouponsQueryParams {

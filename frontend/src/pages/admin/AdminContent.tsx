@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FiPlus,
   FiImage,
   FiLink,
   FiTarget,
-  FiCalendar,
   FiEdit2,
   FiTrash2,
   FiSearch,
@@ -13,53 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-
-interface Banner {
-  id: string;
-  title: string;
-  imageUrl: string;
-  link: string;
-  placement: 'Home Top' | 'Sidebar' | 'Category Page' | 'Deals Top';
-  status: 'Active' | 'Draft' | 'Expired';
-  expiryDate: string;
-  impressions: number;
-}
-
-const MOCK_BANNERS: Banner[] = [
-  {
-    id: '1',
-    title: 'Winter Clearance Sale',
-    imageUrl:
-      'https://images.unsplash.com/photo-1612444530582-fc66183b16f7?auto=format&fit=crop&q=80&w=400',
-    link: '/deals?category=winter',
-    placement: 'Home Top',
-    status: 'Active',
-    expiryDate: '2024-01-31',
-    impressions: 12405,
-  },
-  {
-    id: '2',
-    title: 'New User Bonus',
-    imageUrl:
-      'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&q=80&w=400',
-    link: '/register',
-    placement: 'Sidebar',
-    status: 'Active',
-    expiryDate: '2024-12-31',
-    impressions: 8942,
-  },
-  {
-    id: '3',
-    title: 'Tech Deals Banner',
-    imageUrl:
-      'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=400',
-    link: '/deals?category=tech',
-    placement: 'Deals Top',
-    status: 'Draft',
-    expiryDate: '2024-02-15',
-    impressions: 0,
-  },
-];
+import { getAdminBanners, deleteBanner } from '@/services/api/admin.api';
 
 const SummaryCard = ({
   label,
@@ -69,14 +22,72 @@ const SummaryCard = ({
   value: string | number;
 }) => (
   <div className="bg-[#333333] p-10 rounded-[1.75rem] border border-white/5 flex-1 min-w-[240px] shadow-2xl">
-    <p className="text-[#a0a0a0] text-lg font-medium mb-6">{label}</p>
+    <p className="text-[#a0a0a0] text-lg font-medium mb-6 uppercase tracking-widest opacity-60">
+      {label}
+    </p>
     <h3 className="text-6xl font-black text-white tracking-tighter">{value}</h3>
   </div>
 );
 
+import Swal from 'sweetalert2';
+import { toast } from 'react-hot-toast';
+
 const AdminContent: React.FC = () => {
+  const [banners, setBanners] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const fetchBanners = async () => {
+    setLoading(true);
+    try {
+      const data = await getAdminBanners();
+      // Backend returns raw array, not {data: []}
+      setBanners(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch admin banners:', error);
+      toast.error('Failed to load banners');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBanners();
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#333',
+      confirmButtonText: 'Yes, delete it!',
+      background: '#2c2c2c',
+      color: '#fff',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteBanner(id);
+        toast.success('Banner deleted');
+        fetchBanners();
+      } catch (error) {
+        toast.error('Failed to delete banner');
+      }
+    }
+  };
+
+  const filteredBanners = banners.filter((banner) => {
+    const searchLower = search.toLowerCase();
+    const titleMatch = (banner.title || '').toLowerCase().includes(searchLower);
+    const urlMatch = (banner.targetUrl || '')
+      .toLowerCase()
+      .includes(searchLower);
+    return titleMatch || urlMatch;
+  });
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
@@ -102,9 +113,15 @@ const AdminContent: React.FC = () => {
 
       {/* Summary Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <SummaryCard label="Total Banners" value={8} />
-        <SummaryCard label="Active" value={3} />
-        <SummaryCard label="Disabled" value={1} />
+        <SummaryCard label="Total Banners" value={banners.length} />
+        <SummaryCard
+          label="Active"
+          value={banners.filter((b) => b.status === 'active').length}
+        />
+        <SummaryCard
+          label="Platform Stores"
+          value={banners.length > 0 ? 'Dynamic' : 0}
+        />
       </div>
 
       {/* Main Content Area */}
@@ -112,7 +129,7 @@ const AdminContent: React.FC = () => {
         {/* Search Header */}
         <div className="p-8 border-b border-white/5 flex flex-col md:flex-row items-center justify-between gap-6 bg-[#252525]">
           <h3 className="text-xl font-bold text-white tracking-tight uppercase flex items-center gap-3">
-            <FiImage className="text-[#49b99f]" /> Active Banners
+            <FiImage className="text-[#49b99f]" /> All Banners
           </h3>
 
           <div className="relative w-full md:w-96 group">
@@ -129,112 +146,108 @@ const AdminContent: React.FC = () => {
         {/* List / Table Section */}
         <div className="flex-1 p-8">
           <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left border-separate border-spacing-y-4">
-              <thead>
-                <tr>
-                  <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40">
-                    Visual Preview
-                  </th>
-                  <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40">
-                    Details
-                  </th>
-                  <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40">
-                    Placement
-                  </th>
-                  <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
-                    Stats
-                  </th>
-                  <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
-                    Status
-                  </th>
-                  <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_BANNERS.map((banner) => (
-                  <tr key={banner.id} className="group">
-                    <td className="px-6 py-4 bg-[#1a1a1a]/50 rounded-l-[1.5rem] first:border-l border-y border-white/5">
-                      <div className="relative w-32 h-16 rounded-xl overflow-hidden shadow-lg group-hover:scale-105 transition-transform duration-500">
-                        <img
-                          src={banner.imageUrl}
-                          alt={banner.title}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2">
-                          <FiImage className="text-white/40 w-3 h-3" />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-white font-black text-sm tracking-tight group-hover:text-[#49b99f] transition-colors">
-                          {banner.title}
-                        </span>
-                        <div className="flex items-center gap-2 text-[10px] text-light-grey font-bold opacity-60">
-                          <FiLink className="min-w-fit" />
-                          <span className="truncate max-w-[150px]">
-                            {banner.link}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5">
-                      <span className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#49b99f]/80">
-                        <FiTarget className="w-3 h-3" />
-                        {banner.placement}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5 text-center">
-                      <div className="flex flex-col">
-                        <span className="text-white font-black text-sm">
-                          {banner.impressions.toLocaleString()}
-                        </span>
-                        <span className="text-[10px] font-bold text-light-grey/40 uppercase tracking-widest">
-                          Views
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5 text-center">
-                      <div className="flex items-center justify-center gap-3">
-                        <span
-                          className={cn(
-                            'px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-500',
-                            banner.status === 'Active' &&
-                              'text-[#49b99f] bg-[#49b99f]/10 border-[#49b99f]/20 shadow-[0_0_15px_rgba(73,185,159,0.1)]',
-                            banner.status === 'Draft' &&
-                              'text-orange-400 bg-orange-400/10 border-orange-400/20',
-                            banner.status === 'Expired' &&
-                              'text-red-400 bg-red-400/10 border-red-400/20'
-                          )}>
-                          {banner.status}
-                        </span>
-                        <div className="flex flex-col items-center gap-0.5 opacity-40 group-hover:opacity-100 transition-opacity">
-                          <FiCalendar className="w-3 h-3 text-light-grey" />
-                          <span className="text-[8px] font-black text-light-grey uppercase tracking-tighter">
-                            {banner.expiryDate}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-r border-white/5 rounded-r-[1.5rem] text-center">
-                      <div className="flex items-center justify-center gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
-                        <button className="p-3 bg-white/5 hover:bg-white/10 text-[#49b99f] rounded-xl transition-all hover:scale-110">
-                          <FiEdit2 className="w-4 h-4" />
-                        </button>
-                        <button className="p-3 bg-white/5 hover:bg-white/10 text-red-400 rounded-xl transition-all hover:scale-110">
-                          <FiTrash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+            {loading ? (
+              <div className="p-12 text-center text-light-grey">
+                Loading banners...
+              </div>
+            ) : (
+              <table className="w-full text-left border-separate border-spacing-y-4">
+                <thead>
+                  <tr>
+                    <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40">
+                      Visual Preview
+                    </th>
+                    <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40">
+                      Details
+                    </th>
+                    <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40">
+                      Placement
+                    </th>
+                    <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
+                      Order
+                    </th>
+                    <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
+                      Status
+                    </th>
+                    <th className="px-6 pb-2 text-[10px] font-black uppercase tracking-[0.2em] text-light-grey/40 text-center">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredBanners.map((banner) => (
+                    <tr key={banner.id} className="group">
+                      <td className="px-6 py-4 bg-[#1a1a1a]/50 rounded-l-[1.5rem] first:border-l border-y border-white/5">
+                        <div className="relative w-32 h-16 rounded-xl overflow-hidden shadow-lg group-hover:scale-105 transition-transform duration-500">
+                          <img
+                            src={banner.imageUrl}
+                            alt={banner.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-white font-black text-sm tracking-tight group-hover:text-[#49b99f] transition-colors">
+                            {banner.title}
+                          </span>
+                          <div className="flex items-center gap-2 text-[10px] text-light-grey font-bold opacity-60">
+                            <FiLink className="min-w-fit" />
+                            <span className="truncate max-w-[150px]">
+                              {banner.targetUrl}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5">
+                        <span className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#49b99f]/80">
+                          <FiTarget className="w-3 h-3" />
+                          {banner.placement}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5 text-center">
+                        <span className="text-white font-black text-sm">
+                          {banner.sortOrder}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-white/5 text-center">
+                        <div className="flex items-center justify-center gap-3">
+                          <span
+                            className={cn(
+                              'px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all duration-500',
+                              banner.status === 'active' &&
+                                'text-[#49b99f] bg-[#49b99f]/10 border-[#49b99f]/20 shadow-[0_0_15px_rgba(73,185,159,0.1)]',
+                              (banner.status === 'draft' ||
+                                banner.status === 'expired') &&
+                                'text-orange-400 bg-orange-400/10 border-orange-400/20'
+                            )}>
+                            {banner.status}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 bg-[#1a1a1a]/50 border-y border-r border-white/5 rounded-r-[1.5rem] text-center">
+                        <div className="flex items-center justify-center gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() =>
+                              navigate(`/admin/content/edit/${banner.id}`)
+                            }
+                            className="p-3 bg-white/5 hover:bg-white/10 text-[#49b99f] rounded-xl transition-all hover:scale-110">
+                            <FiEdit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(banner.id)}
+                            className="p-3 bg-white/5 hover:bg-white/10 text-red-400 rounded-xl transition-all hover:scale-110">
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
 
-            {/* Empty State */}
-            {MOCK_BANNERS.length === 0 && (
+            {!loading && filteredBanners.length === 0 && (
               <div className="py-32 flex flex-col items-center justify-center text-center">
                 <div className="p-10 bg-white/5 rounded-[2.5rem] mb-6">
                   <FiImage className="w-20 h-20 text-light-grey opacity-20" />

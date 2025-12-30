@@ -1,20 +1,30 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authApi } from '../services/api/auth.api';
 
-export type UserRole = 'user' | 'admin';
+export type UserRole = 'user' | 'admin' | 'moderator';
 
 interface User {
   id: string;
-  name: string;
+  username: string;
   email: string;
-  role: UserRole;
-  avatar?: string;
+  role: 'user' | 'admin' | 'moderator';
+  avatar: string;
+  bio: string;
+  karma: number;
+  level: string;
+}
+
+interface LoginData {
+  email: string;
+  password: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (role: UserRole) => Promise<void>;
+  login: (data: LoginData) => Promise<void>;
   register: (data: any) => Promise<void>;
+  updateUser: (userData: Partial<User>) => void;
   logout: () => void;
   isLoading: boolean;
 }
@@ -28,44 +38,74 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored user on mount
+    // Check for stored tokens and user on mount
     const storedUser = localStorage.getItem('waferlee_user');
-    if (storedUser) {
+    const token = localStorage.getItem('authToken');
+
+    if (storedUser && token) {
       setUser(JSON.parse(storedUser));
+    } else {
+      // Clear if inconsistent
+      localStorage.removeItem('waferlee_user');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
     }
     setIsLoading(false);
   }, []);
 
-  const login = async (role: UserRole) => {
+  const login = async (data: LoginData) => {
     setIsLoading(true);
-    // Mocking API delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    try {
+      const response = await authApi.login(data);
+      // The interceptor unwraps the response, so 'response' is the data object
+      if (response && (response as any).accessToken) {
+        const { accessToken, refreshToken, user: userData } = response as any;
 
-    const mockUser: User = {
-      id: role === 'admin' ? 'admin-1' : 'user-1',
-      name: role === 'admin' ? 'Belal Admin' : 'Armani Doe',
-      email: role === 'admin' ? 'admin@waferlee.com' : 'user@waferlee.com',
-      role: role,
-      avatar:
-        role === 'admin' ? '/admin-avatar.png' : '/avatar-placeholder.png',
-    };
+        localStorage.setItem('authToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('waferlee_user', JSON.stringify(userData));
 
-    setUser(mockUser);
-    localStorage.setItem('waferlee_user', JSON.stringify(mockUser));
-    setIsLoading(false);
+        setUser(userData as any);
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const register = async (data: any) => {
     setIsLoading(true);
-    // Mocking API delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    console.log('Mock registration successful:', data);
-    setIsLoading(false);
+    try {
+      return await authApi.register(data);
+    } catch (error) {
+      console.error('Registration failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('waferlee_user');
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.warn('Logout failed on server:', error);
+    } finally {
+      setUser(null);
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('waferlee_user');
+    }
+  };
+
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      localStorage.setItem('waferlee_user', JSON.stringify(updatedUser));
+    }
   };
 
   return (
@@ -75,6 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAuthenticated: !!user,
         login,
         register,
+        updateUser,
         logout,
         isLoading,
       }}>
