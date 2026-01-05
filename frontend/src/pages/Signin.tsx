@@ -109,23 +109,6 @@ export default function Signin() {
     }
   }
 
-  async function autoLogin(e: string, p: string) {
-    setIsLoading(true);
-    setErrors({});
-    try {
-      await login({ email: e, password: p });
-      console.log('Auto-login successful');
-      navigate('/dashboard');
-    } catch (error: any) {
-      console.error('Auto-login error:', error);
-      setErrors({
-        email: error?.response?.data?.message || 'Invalid email or password',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   return (
     <>
       <Snowfall color="#82C3D9" />
@@ -153,37 +136,6 @@ export default function Signin() {
               </Button>
             </div>
           </CardHeader>
-
-          {/* Demo Login Cards */}
-          <div className="px-6 pb-2 grid grid-cols-2 gap-3">
-            <div
-              onClick={() => autoLogin('admin@waferlee.com', 'admin123')}
-              className="bg-[#2c2c2c] hover:bg-[#333] border border-white/5 p-3 rounded-xl cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] group">
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center text-red-500 font-bold text-xs ring-1 ring-red-500/50">
-                  A
-                </div>
-                <div>
-                  <p className="text-white font-bold text-sm">Admin</p>
-                  <p className="text-light-grey text-[10px]">Full Access</p>
-                </div>
-              </div>
-            </div>
-
-            <div
-              onClick={() => autoLogin('belal@example.com', 'password123')}
-              className="bg-[#2c2c2c] hover:bg-[#333] border border-white/5 p-3 rounded-xl cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] group">
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-8 h-8 rounded-full bg-[#49b99f]/20 flex items-center justify-center text-[#49b99f] font-bold text-xs ring-1 ring-[#49b99f]/50">
-                  U
-                </div>
-                <div>
-                  <p className="text-white font-bold text-sm">User</p>
-                  <p className="text-light-grey text-[10px]">Regular User</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <CardContent className="space-y-4">
