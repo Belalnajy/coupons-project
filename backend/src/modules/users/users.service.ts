@@ -141,8 +141,7 @@ export class UsersService {
   }
 
   async removeAdmin(id: string): Promise<void> {
-    const user = await this.findOne(id);
-    await this.userRepository.softRemove(user);
+    await this.userRepository.delete(id);
   }
 
   async validatePassword(user: User, password: string): Promise<boolean> {
@@ -157,6 +156,12 @@ export class UsersService {
     const user = await this.findOne(id);
     user.karma += points;
     user.level = this.calculateLevel(user.karma);
+    await this.userRepository.save(user);
+  }
+
+  async updatePassword(id: string, password: string): Promise<void> {
+    const user = await this.findOne(id);
+    user.passwordHash = await bcrypt.hash(password, 12);
     await this.userRepository.save(user);
   }
 

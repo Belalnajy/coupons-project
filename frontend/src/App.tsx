@@ -6,6 +6,9 @@ import Signin from './pages/Signin';
 import Deals from './pages/Deals';
 import DealsDetails from './pages/DealsDetails';
 import Coupons from './pages/Coupons';
+import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import Overview from './pages/dashboard/Overview';
 import MyDeals from './pages/dashboard/MyDeals';
@@ -68,6 +71,9 @@ function App() {
             <Route path="/deals" element={<Deals />} />
             <Route path="/deals/:id" element={<DealsDetails />} />
             <Route path="/coupons" element={<Coupons />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
           </Route>
 
           {/* Dashboard Routes */}

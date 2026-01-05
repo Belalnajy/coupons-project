@@ -75,7 +75,7 @@ Run SQL commands (replace `strong_password` with a real password):
 
 ```sql
 CREATE DATABASE coupons;
-CREATE USER coupons_user WITH PASSWORD 'strong_password';
+CREATE USER coupons_user WITH PASSWORD 'waferleepassword123';
 GRANT ALL PRIVILEGES ON DATABASE coupons TO coupons_user;
 -- Grant schema usage if needed (Postgres 15+ specific)
 GRANT ALL ON SCHEMA public TO coupons_user;

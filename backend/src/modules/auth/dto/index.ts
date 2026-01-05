@@ -7,6 +7,8 @@ import {
   IsOptional,
 } from 'class-validator';
 
+export * from './verification.dto';
+
 export class RegisterDto {
   @IsString()
   @MinLength(3)
@@ -33,21 +35,6 @@ export class LoginDto {
 export class RefreshTokenDto {
   @IsString()
   refreshToken: string;
-}
-
-export class ForgotPasswordDto {
-  @IsEmail()
-  email: string;
-}
-
-export class ResetPasswordDto {
-  @IsString()
-  token: string;
-
-  @IsString()
-  @MinLength(8)
-  @MaxLength(100)
-  password: string;
 }
 
 export class TokenResponseDto {

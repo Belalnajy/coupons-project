@@ -118,6 +118,11 @@ export async function updateAdminUser(id: string, data: any): Promise<any> {
   return response.data;
 }
 
+export async function deleteAdminUser(id: string): Promise<any> {
+  const response = await apiClient.delete(`/admin/users/${id}`);
+  return response.data;
+}
+
 export async function createBanner(data: any): Promise<any> {
   const response = await apiClient.post('/admin/banners', data);
   return response.data;

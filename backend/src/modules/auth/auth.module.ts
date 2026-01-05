@@ -7,9 +7,11 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
 import { RefreshToken } from './entities/refresh-token.entity';
+import { VerificationCode } from './entities/verification-code.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { SettingsModule } from '../settings/settings.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -26,8 +28,9 @@ import { SettingsModule } from '../settings/settings.module';
       }),
     }),
 
-    TypeOrmModule.forFeature([RefreshToken]),
+    TypeOrmModule.forFeature([RefreshToken, VerificationCode]),
     SettingsModule,
+    MailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtRefreshStrategy],

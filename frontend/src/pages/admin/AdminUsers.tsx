@@ -16,6 +16,7 @@ import {
   getAdminUsers,
   toggleUserStatus,
   getAdminStats,
+  deleteAdminUser,
 } from '@/services/api/admin.api';
 
 const SummaryCard = ({
@@ -93,6 +94,30 @@ const AdminUsers: React.FC = () => {
         fetchUsers();
       } catch (error) {
         toast.error(`Failed to ${action} user`);
+      }
+    }
+  };
+
+  const handleDeleteUser = async (id: string, username: string) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `You are about to delete user "${username}". This action can be undone by an administrator, but the user will lose access immediately.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#333',
+      confirmButtonText: 'Yes, delete user',
+      background: '#2c2c2c',
+      color: '#fff',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteAdminUser(id);
+        toast.success('User deleted successfully');
+        fetchUsers();
+      } catch (error) {
+        toast.error('Failed to delete user');
       }
     }
   };
@@ -272,7 +297,11 @@ const AdminUsers: React.FC = () => {
                               <FiCheckCircle className="w-4 h-4" />
                             )}
                           </button>
-                          <button className="p-2 text-red-500/60 hover:text-red-500 transition-colors cursor-pointer rounded-lg hover:bg-red-500/10">
+                          <button
+                            onClick={() =>
+                              handleDeleteUser(user.id, user.username)
+                            }
+                            className="p-2 text-red-500/60 hover:text-red-500 transition-colors cursor-pointer rounded-lg hover:bg-red-500/10">
                             <FiTrash2 className="w-4 h-4" />
                           </button>
                         </div>

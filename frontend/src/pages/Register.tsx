@@ -128,8 +128,8 @@ export default function Register() {
 
       console.log('Registration successful:', data);
 
-      // Navigate to sign-in page on success
-      navigate('/signin');
+      // Navigate to verify-email page on success
+      navigate('/verify-email', { state: { email: validation.data.email } });
     } catch (error) {
       console.error('Registration error:', error);
       setErrors({ email: 'Registration failed. Please try again.' });

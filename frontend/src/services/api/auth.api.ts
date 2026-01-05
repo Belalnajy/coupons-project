@@ -26,6 +26,30 @@ export const authApi = {
     return response.data;
   },
 
+  verifyEmail: async (data: { email: string; code: string }) => {
+    const response = await apiClient.post('/auth/verify-email', data);
+    return response.data;
+  },
+
+  resendVerification: async (data: { email: string }) => {
+    const response = await apiClient.post('/auth/resend-verification', data);
+    return response.data;
+  },
+
+  forgotPassword: async (data: { email: string }) => {
+    const response = await apiClient.post('/auth/forgot-password', data);
+    return response.data;
+  },
+
+  resetPassword: async (data: {
+    email: string;
+    code: string;
+    newPassword: string;
+  }) => {
+    const response = await apiClient.post('/auth/reset-password', data);
+    return response.data;
+  },
+
   refresh: async (refreshToken: string) => {
     const response = await apiClient.post('/auth/refresh', { refreshToken });
     return response.data;
