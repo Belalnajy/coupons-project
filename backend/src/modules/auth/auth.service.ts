@@ -1,4 +1,6 @@
 import { SettingsService } from '../settings/settings.service';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 import {
   Injectable,
   Logger,
@@ -46,6 +48,7 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     private readonly settingsService: SettingsService,
     private readonly mailService: MailService,
+    private readonly httpService: HttpService,
   ) {}
 
   async register(
@@ -60,6 +63,14 @@ export class AuthService {
       throw new ForbiddenException(
         'Public registration is currently closed. Please contact an administrator.',
       );
+    }
+
+    // Verify reCAPTCHA
+    if (registerDto.recaptchaToken) {
+      const isHuman = await this.verifyRecaptcha(registerDto.recaptchaToken);
+      if (!isHuman) {
+        throw new BadRequestException('reCAPTCHA verification failed');
+      }
     }
 
     // Check if user exists in User table
@@ -395,5 +406,28 @@ export class AuthService {
 
   private generateOtp(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  private async verifyRecaptcha(token: string): Promise<boolean> {
+    const secret = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
+    if (!secret) {
+      this.logger.warn(
+        'RECAPTCHA_SECRET_KEY is not set. Skipping verification.',
+      );
+      return true;
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          `https://www.google.com/recaptcha/api/siteverify?secret=${secret}&response=${token}`,
+        ),
+      );
+
+      return response.data.success;
+    } catch (error) {
+      this.logger.error('reCAPTCHA verification failed', error);
+      return false;
+    }
   }
 }

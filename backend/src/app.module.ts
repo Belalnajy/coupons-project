@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { CacheModule } from '@nestjs/cache-manager';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
@@ -31,6 +33,21 @@ import { UploadModule } from './modules/upload/upload.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: getTypeOrmConfig,
+    }),
+
+    // Rate Limiting
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
+
+    // Caching
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 60, // 60 seconds default
+      max: 100, // maximum number of items in cache
     }),
 
     // Feature Modules

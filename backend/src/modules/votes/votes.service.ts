@@ -9,6 +9,7 @@ import { Vote } from './entities/vote.entity';
 import { Deal } from '../deals/entities/deal.entity';
 import { VoteType } from '../../common/enums';
 import { UsersService } from '../users/users.service';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class VotesService {
@@ -19,6 +20,7 @@ export class VotesService {
     private readonly dealRepository: Repository<Deal>,
     private readonly dataSource: DataSource,
     private readonly usersService: UsersService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   async vote(userId: string, dealId: string, type: VoteType) {
@@ -42,10 +44,34 @@ export class VotesService {
         where: { userId, dealId },
       });
 
-      let action: 'created' | 'removed' | 'changed';
+      let action: 'created' | 'removed' | 'changed' = 'created';
       let temperatureChange = 0;
-
       const increment = type === VoteType.HOT ? 1 : -1;
+
+      // Check voting cooldown
+      const cooldownHours = await this.settingsService.getInt(
+        'vote_cooldown',
+        24,
+      );
+      if (existingVote) {
+        const lastUpdate = existingVote.updatedAt || existingVote.createdAt;
+        const diffMs = Date.now() - new Date(lastUpdate).getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+
+        if (diffHours < cooldownHours && existingVote.type === type) {
+          // If trying to remove the same vote too soon?
+          // Usually removing is allowed, but changing types might be restricted.
+          // Let's allow removing but restrict changing if within cooldown.
+          // Actually, if existingVote.type === type, we REMOVE it.
+          // If existingVote.type !== type, we CHANGE it.
+        }
+
+        if (existingVote.type !== type && diffHours < cooldownHours) {
+          throw new ForbiddenException(
+            `You can only change your vote once every ${cooldownHours} hours.`,
+          );
+        }
+      }
 
       if (existingVote) {
         if (existingVote.type === type) {

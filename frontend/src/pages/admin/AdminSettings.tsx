@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   FiActivity,
   FiThumbsUp,
@@ -7,11 +7,30 @@ import {
   FiAlertCircle,
   FiInfo,
   FiUpload,
+  FiShare2,
 } from 'react-icons/fi';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { getAdminSettings, updateSetting } from '@/services/api/admin.api';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  getAdminSettings,
+  updateSetting,
+  resetSettings,
+  clearCache,
+} from '@/services/api/admin.api';
+import { uploadImage } from '@/services/api/settings.api';
+import { toast } from 'react-hot-toast';
+import { useSettings } from '@/context/SettingsContext';
 
 interface SettingSectionProps {
   title: string;
@@ -68,8 +87,9 @@ const ToggleField = ({
     </div>
     <button
       onClick={() => onChange(!enabled)}
+      type="button"
       className={cn(
-        'w-14 h-8 rounded-full relative transition-all duration-300 shadow-inner',
+        'w-14 h-8 rounded-full relative transition-all duration-300 shadow-inner p-0 border-0',
         enabled ? 'bg-[#49b99f]' : 'bg-[#1a1a1a] border border-white/10'
       )}>
       <div
@@ -82,28 +102,78 @@ const ToggleField = ({
   </div>
 );
 
-const UploadBox = ({ label }: { label: string }) => (
-  <div className="space-y-4 flex-1">
-    <label className="text-sm font-bold text-white group-hover:text-[#49b99f] transition-colors block">
-      {label}
-    </label>
-    <div className="border-2 border-dashed border-[#49b99f]/30 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 group hover:border-[#49b99f] transition-all cursor-pointer bg-[#49b99f]/5">
-      <FiUpload className="w-6 h-6 text-[#49b99f] opacity-60 group-hover:opacity-100" />
-      <span className="text-xs font-black uppercase tracking-widest text-[#49b99f]">
-        Upload
-      </span>
-    </div>
-    <Input
-      placeholder="Or enter the link directly"
-      className="h-12 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 text-xs font-medium italic"
-    />
-  </div>
-);
+const UploadBox = ({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
-import { toast } from 'react-hot-toast';
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const { url } = await uploadImage(file, 'branding');
+      onChange(url);
+      toast.success(`${label} uploaded successfully`);
+    } catch (error) {
+      toast.error(`Failed to upload ${label}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 flex-1">
+      <label className="text-sm font-bold text-white group-hover:text-[#49b99f] transition-colors block">
+        {label}
+      </label>
+      <div
+        onClick={() => fileInputRef.current?.click()}
+        className="border-2 border-dashed border-[#49b99f]/30 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 group hover:border-[#49b99f] transition-all cursor-pointer bg-[#49b99f]/5 overflow-hidden relative min-h-[140px]">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+          accept="image/*"
+        />
+        {value ? (
+          <img
+            src={value}
+            alt={label}
+            className="max-h-20 w-auto object-contain"
+          />
+        ) : (
+          <>
+            <FiUpload className="w-6 h-6 text-[#49b99f] opacity-60 group-hover:opacity-100" />
+            <span className="text-xs font-black uppercase tracking-widest text-[#49b99f]">
+              {uploading ? 'Uploading...' : 'Upload'}
+            </span>
+          </>
+        )}
+      </div>
+      <Input
+        placeholder="Or enter the link directly"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-12 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 text-xs font-medium italic"
+      />
+    </div>
+  );
+};
 
 const AdminSettings: React.FC = () => {
+  const { refreshSettings } = useSettings();
   const [loading, setLoading] = useState(true);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [settings, setSettings] = useState<any>({
     deals_enabled: 'true',
     coupons_enabled: 'true',
@@ -118,9 +188,15 @@ const AdminSettings: React.FC = () => {
     comment_moderation: 'false',
     support_email: 'support@waferlee.com',
     moderation_email: 'moderation@waferlee.com',
+    logo_url: '/waferlee-logo.png',
+    favicon_url: '/waferlee-logo.png',
+    facebook_url: 'https://facebook.com',
+    twitter_url: 'https://twitter.com',
+    youtube_url: 'https://youtube.com',
+    linkedin_url: 'https://linkedin.com',
   });
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getAdminSettings();
@@ -135,7 +211,7 @@ const AdminSettings: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [settings]);
 
   useEffect(() => {
     fetchSettings();
@@ -149,6 +225,7 @@ const AdminSettings: React.FC = () => {
       );
       await Promise.all(promises);
       toast.success('Settings saved successfully');
+      await refreshSettings();
     } catch (error) {
       toast.error('Failed to save settings');
     } finally {
@@ -156,8 +233,35 @@ const AdminSettings: React.FC = () => {
     }
   };
 
+  const handleReset = async () => {
+    try {
+      setLoading(true);
+      await resetSettings();
+      toast.success('Settings reset to factory defaults');
+      await fetchSettings();
+      await refreshSettings();
+    } catch (error) {
+      toast.error('Failed to reset settings');
+    } finally {
+      setLoading(false);
+      setShowResetModal(false);
+    }
+  };
+
+  const handleClearCache = async () => {
+    try {
+      setLoading(true);
+      await clearCache();
+      toast.success('System cache cleared successfully');
+    } catch (error) {
+      toast.error('Failed to clear system cache');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+    <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000 pb-20">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
@@ -178,6 +282,7 @@ const AdminSettings: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* Main Content Areas */}
         <div className="lg:col-span-8 space-y-8">
           {/* Site Sections Configuration */}
           <SettingSection
@@ -295,11 +400,12 @@ const AdminSettings: React.FC = () => {
                 ].map((opt) => (
                   <button
                     key={opt.id}
+                    type="button"
                     onClick={() =>
                       setSettings({ ...settings, who_can_vote: opt.id })
                     }
                     className={cn(
-                      'flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all',
+                      'flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all p-0 border-0',
                       settings.who_can_vote === opt.id
                         ? 'bg-[#49b99f] text-white shadow-lg'
                         : 'text-light-grey hover:text-white'
@@ -342,87 +448,118 @@ const AdminSettings: React.FC = () => {
           </SettingSection>
 
           {/* Platform Information */}
-          <div className="bg-[#2c2c2c] rounded-[2rem] border border-white/5 shadow-xl overflow-hidden p-8 space-y-10">
-            <h3 className="text-2xl font-black text-white tracking-tight uppercase">
-              Platform Information
-            </h3>
+          <SettingSection
+            title="Platform Information"
+            description="General identity and branding settings"
+            icon={FiInfo}>
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-white block">
+                  Platform Name
+                </label>
+                <Input
+                  value={settings.platform_name}
+                  onChange={(e) =>
+                    setSettings({ ...settings, platform_name: e.target.value })
+                  }
+                  className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
+                />
+                <p className="text-xs text-light-grey opacity-40">
+                  The name of your deals platform
+                </p>
+              </div>
 
-            <div className="space-y-4">
-              <label className="text-sm font-bold text-white block">
-                Platform Name
-              </label>
-              <Input
-                value={settings.platform_name}
-                onChange={(e) =>
-                  setSettings({ ...settings, platform_name: e.target.value })
-                }
-                className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
-              />
-              <p className="text-xs text-light-grey opacity-40">
-                The name of your deals platform
-              </p>
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-white block">
+                  Contact Email
+                </label>
+                <Input
+                  value={settings.contact_email}
+                  onChange={(e) =>
+                    setSettings({ ...settings, contact_email: e.target.value })
+                  }
+                  className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
+                />
+                <p className="text-xs text-light-grey opacity-40">
+                  General contact email for users
+                </p>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-8">
+                <UploadBox
+                  label="Logo"
+                  value={settings.logo_url}
+                  onChange={(val) =>
+                    setSettings({ ...settings, logo_url: val })
+                  }
+                />
+                <UploadBox
+                  label="Favicon"
+                  value={settings.favicon_url}
+                  onChange={(val) =>
+                    setSettings({ ...settings, favicon_url: val })
+                  }
+                />
+              </div>
             </div>
+          </SettingSection>
 
-            <div className="space-y-4">
-              <label className="text-sm font-bold text-white block">
-                Contact Email
-              </label>
-              <Input
-                value={settings.contact_email}
-                onChange={(e) =>
-                  setSettings({ ...settings, contact_email: e.target.value })
-                }
-                className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
-              />
-              <p className="text-xs text-light-grey opacity-40">
-                General contact email for users
-              </p>
+          {/* Social Media Links */}
+          <SettingSection
+            title="Social Media Links"
+            description="Configure links for social platform icons in the footer"
+            icon={FiShare2}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-white block">
+                  Facebook URL
+                </label>
+                <Input
+                  value={settings.facebook_url}
+                  onChange={(e) =>
+                    setSettings({ ...settings, facebook_url: e.target.value })
+                  }
+                  className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
+                />
+              </div>
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-white block">
+                  Twitter URL
+                </label>
+                <Input
+                  value={settings.twitter_url}
+                  onChange={(e) =>
+                    setSettings({ ...settings, twitter_url: e.target.value })
+                  }
+                  className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
+                />
+              </div>
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-white block">
+                  YouTube URL
+                </label>
+                <Input
+                  value={settings.youtube_url}
+                  onChange={(e) =>
+                    setSettings({ ...settings, youtube_url: e.target.value })
+                  }
+                  className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
+                />
+              </div>
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-white block">
+                  LinkedIn URL
+                </label>
+                <Input
+                  value={settings.linkedin_url}
+                  onChange={(e) =>
+                    setSettings({ ...settings, linkedin_url: e.target.value })
+                  }
+                  className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
+                />
+              </div>
             </div>
-
-            <div className="flex flex-col md:flex-row gap-8">
-              <UploadBox label="Logo" />
-              <UploadBox label="Favicon" />
-            </div>
-          </div>
-
-          {/* Email Configuration */}
-          <div className="bg-[#2c2c2c] rounded-[2rem] border border-white/5 shadow-xl overflow-hidden p-8 space-y-10">
-            <h3 className="text-2xl font-black text-white tracking-tight uppercase">
-              Email Configuration
-            </h3>
-
-            <div className="space-y-4">
-              <label className="text-sm font-bold text-white block">
-                Support Email
-              </label>
-              <Input
-                value={settings.support_email}
-                onChange={(e) =>
-                  setSettings({ ...settings, support_email: e.target.value })
-                }
-                className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
-              />
-              <p className="text-xs text-light-grey opacity-40">
-                Email for user support inquiries
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <label className="text-sm font-bold text-white block">
-                Moderation Email
-              </label>
-              <Input
-                value={settings.moderation_email}
-                onChange={(e) =>
-                  setSettings({ ...settings, moderation_email: e.target.value })
-                }
-                className="h-14 bg-[#1a1a1a] border-white/5 rounded-2xl px-6 text-white focus:ring-[#49b99f]/20 font-bold"
-              />
-              <p className="text-xs text-light-grey opacity-40">
-                Email for moderation-related notifications
-              </p>
-            </div>
-          </div>
+          </SettingSection>
         </div>
 
         {/* Sidebar Info */}
@@ -460,13 +597,44 @@ const AdminSettings: React.FC = () => {
                 Advanced Actions
               </h4>
             </div>
+
+            <AlertDialog open={showResetModal} onOpenChange={setShowResetModal}>
+              <Button
+                variant="outline"
+                onClick={() => setShowResetModal(true)}
+                disabled={loading}
+                className="w-full h-12 border-red-500/20 text-red-500 hover:bg-red-500/10 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                Reset to Factory Defaults
+              </Button>
+              <AlertDialogContent className="bg-[#1a1a1a] border-white/10 text-white rounded-[2rem] p-8">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-2xl font-black uppercase tracking-tighter">
+                    Are you absolutely sure?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="text-light-grey text-base font-medium opacity-70">
+                    This action will reset ALL platform settings to their
+                    original factory defaults. This includes branding, voting
+                    rules, and general configurations. This action cannot be
+                    undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="mt-8 gap-4">
+                  <AlertDialogCancel className="bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl h-12 font-bold px-8">
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleReset}
+                    className="bg-red-500 hover:bg-red-600 text-white border-0 rounded-xl h-12 font-black uppercase tracking-widest px-8 shadow-lg shadow-red-500/20">
+                    Yes, Reset Everything
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
             <Button
               variant="outline"
-              className="w-full h-12 border-red-500/20 text-red-500 hover:bg-red-500/10 rounded-xl text-[10px] font-black uppercase tracking-widest">
-              Reset to Factory Defaults
-            </Button>
-            <Button
-              variant="outline"
+              onClick={handleClearCache}
+              disabled={loading}
               className="w-full h-12 border-red-500/20 text-red-500 hover:bg-red-500/10 rounded-xl text-[10px] font-black uppercase tracking-widest">
               Clear System Cache
             </Button>

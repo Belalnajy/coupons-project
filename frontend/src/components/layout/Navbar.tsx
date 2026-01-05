@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FiSearch, FiMenu, FiX } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
+import { useSettings } from '@/context/SettingsContext';
 
 export function Navbar() {
+  const { settings } = useSettings();
   const { isAuthenticated, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -21,14 +23,14 @@ export function Navbar() {
   };
 
   return (
-    <nav className="bg-darker-grey border-b border-grey">
+    <nav className="bg-darker-grey border-b border-grey sticky top-0 z-50 shadow-md">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <img
-              src="/waferlee-logo.png"
-              alt="WiseLife Logo"
+              src={settings.logo_url}
+              alt={settings.platform_name}
               className="h-15 w-auto"
             />
           </Link>

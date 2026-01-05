@@ -1,35 +1,52 @@
 import { Link } from 'react-router-dom';
 import { FaFacebook, FaTwitter, FaYoutube, FaLinkedin } from 'react-icons/fa';
+import { useSettings } from '@/context/SettingsContext';
 
 export function Footer() {
+  const { settings } = useSettings();
   const currentYear = new Date().getFullYear();
 
   const quickLinks = [
-    { label: 'Sign In', href: '/login' },
-    { label: 'How it Works', href: '/how-it-works' },
-    { label: 'Submit a Deal', href: '/submit-deal' },
-    { label: 'Contact us', href: '/contact' },
+    { label: 'Sign In', href: '/signin' },
+    { label: 'Join Free', href: '/register' },
+    { label: 'Latest Deals', href: '/deals' },
+    { label: 'Popular Coupons', href: '/coupons' },
   ];
 
   const categories = [
     { label: 'Electronics', href: '/deals?category=electronics' },
     { label: 'Fashion', href: '/deals?category=fashion' },
     { label: 'Gaming', href: '/deals?category=gaming' },
-    { label: 'Home&Garden', href: '/deals?category=home-garden' },
+    { label: 'Home & Garden', href: '/deals?category=home-garden' },
   ];
 
   const legal = [
     { label: 'Terms of Service', href: '/terms' },
     { label: 'Privacy Policy', href: '/privacy' },
     { label: 'Cookie Policy', href: '/cookies' },
-    { label: 'Guidelines', href: '/guidelines' },
   ];
 
   const socialLinks = [
-    { icon: FaFacebook, href: 'https://facebook.com', label: 'Facebook' },
-    { icon: FaTwitter, href: 'https://twitter.com', label: 'Twitter' },
-    { icon: FaYoutube, href: 'https://youtube.com', label: 'YouTube' },
-    { icon: FaLinkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
+    {
+      icon: FaFacebook,
+      href: settings.facebook_url || 'https://facebook.com',
+      label: 'Facebook',
+    },
+    {
+      icon: FaTwitter,
+      href: settings.twitter_url || 'https://twitter.com',
+      label: 'Twitter',
+    },
+    {
+      icon: FaYoutube,
+      href: settings.youtube_url || 'https://youtube.com',
+      label: 'YouTube',
+    },
+    {
+      icon: FaLinkedin,
+      href: settings.linkedin_url || 'https://linkedin.com',
+      label: 'LinkedIn',
+    },
   ];
 
   return (
@@ -40,8 +57,8 @@ export function Footer() {
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
               <img
-                src="/waferlee-logo.png"
-                alt="WiseLife Logo"
+                src={settings.logo_url}
+                alt={settings.platform_name}
                 className="h-15 w-auto"
               />
             </Link>
@@ -117,7 +134,10 @@ export function Footer() {
         {/* Copyright */}
         <div className="border-t border-grey pt-6">
           <p className="text-light-grey text-sm text-center">
-            © {currentYear} WiseLife. All rights reserved.
+            © {currentYear} {settings.platform_name}. All rights reserved.
+          </p>
+          <p className="text-light-grey/40 text-[10px] text-center mt-2">
+            Contact: {settings.contact_email}
           </p>
         </div>
       </div>

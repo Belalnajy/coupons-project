@@ -157,9 +157,6 @@ export async function getAdminReport(id: string): Promise<any> {
 }
 
 export async function deleteReportedContent(reportId: string): Promise<any> {
-  // logic to be implemented on backend to handle content deletion via report
-  // for now we can reuse the review endpoint with a specific status or add a new endpoint
-  // assuming 'resolved' status implies handling content, or we can add specific action
   const response = await apiClient.put(`/admin/reports/${reportId}/review`, {
     status: 'resolved',
   });
@@ -180,6 +177,16 @@ export async function updateSetting(
     value,
     description,
   });
+  return response.data;
+}
+
+export async function resetSettings(): Promise<any> {
+  const response = await apiClient.post('/admin/settings/reset');
+  return response.data;
+}
+
+export async function clearCache(): Promise<any> {
+  const response = await apiClient.post('/admin/settings/clear-cache');
   return response.data;
 }
 

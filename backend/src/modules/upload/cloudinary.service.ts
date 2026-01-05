@@ -26,6 +26,8 @@ export class CloudinaryService {
         {
           folder: folder,
           resource_type: 'auto',
+          quality: 'auto',
+          fetch_format: 'auto',
         },
         (error, result) => {
           if (error) return reject(error);

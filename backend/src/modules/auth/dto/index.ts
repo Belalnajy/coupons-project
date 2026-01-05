@@ -22,6 +22,10 @@ export class RegisterDto {
   @MinLength(8)
   @MaxLength(100)
   password: string;
+
+  @IsString()
+  @IsOptional()
+  recaptchaToken?: string;
 }
 
 export class LoginDto {

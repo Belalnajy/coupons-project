@@ -1,4 +1,12 @@
-import { Controller, Get, Put, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Param,
+  Body,
+  UseGuards,
+  Post,
+} from '@nestjs/common';
 import { SettingsService } from '../../settings/settings.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
@@ -22,5 +30,15 @@ export class AdminSettingsController {
     @Body() data: { value: any; description?: string },
   ) {
     return this.settingsService.update(key, data.value, data.description);
+  }
+
+  @Post('reset')
+  async resetToDefaults() {
+    return this.settingsService.resetToDefaults();
+  }
+
+  @Post('clear-cache')
+  async clearCache() {
+    return this.settingsService.clearSystemCache();
   }
 }

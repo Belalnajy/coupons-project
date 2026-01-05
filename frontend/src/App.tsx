@@ -33,13 +33,17 @@ import AdminSettings from './pages/admin/AdminSettings';
 import AdminVoting from './pages/admin/AdminVoting';
 import AdminReports from './pages/admin/AdminReports';
 import AdminReportReview from './pages/admin/AdminReportReview';
+import Terms from './pages/legal/Terms';
+import Privacy from './pages/legal/Privacy';
+import Cookies from './pages/legal/Cookies';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Snowfall from 'react-snowfall';
 import { Toaster } from 'react-hot-toast';
+import { SettingsProvider } from './context/SettingsContext';
 
 function App() {
   return (
-    <>
+    <SettingsProvider>
       <Toaster
         position="top-center"
         toastOptions={{
@@ -74,6 +78,9 @@ function App() {
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/cookies" element={<Cookies />} />
           </Route>
 
           {/* Dashboard Routes */}
@@ -122,7 +129,7 @@ function App() {
           </Route>
         </Routes>
       </BrowserRouter>
-    </>
+    </SettingsProvider>
   );
 }
 

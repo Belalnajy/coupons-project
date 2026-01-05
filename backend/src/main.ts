@@ -6,6 +6,7 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -36,8 +37,14 @@ async function bootstrap() {
     }),
   );
 
+  // Security Headers
+  app.use(helmet());
+
   // Enable CORS
-  app.enableCors();
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN || '*',
+    credentials: true,
+  });
 
   // Swagger Documentation
   const config = new DocumentBuilder()

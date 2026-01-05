@@ -20,6 +20,7 @@ import {
   FieldLabel,
   FieldError,
 } from '@/components/ui/field';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { useAuth } from '@/context/AuthContext';
 
 // Zod validation schema for registration form
@@ -62,6 +63,10 @@ export default function Register() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [errors, setErrors] = React.useState<FormErrors>({});
   const [termsAccepted, setTermsAccepted] = React.useState(false);
+  const [recaptchaToken, setRecaptchaToken] = React.useState<string | null>(
+    null
+  );
+  const recaptchaRef = React.useRef<ReCAPTCHA>(null);
   const navigate = useNavigate();
   const { register } = useAuth();
 
@@ -116,6 +121,14 @@ export default function Register() {
       return;
     }
 
+    if (!recaptchaToken) {
+      setErrors((prev) => ({
+        ...prev,
+        email: 'Please complete the reCAPTCHA verification.',
+      }));
+      return;
+    }
+
     // If validation passes, proceed with API call
     setIsLoading(true);
 
@@ -124,15 +137,22 @@ export default function Register() {
         username: validation.data.username,
         email: validation.data.email,
         password: validation.data.password,
+        recaptchaToken: recaptchaToken || undefined,
       });
 
       console.log('Registration successful:', data);
 
       // Navigate to verify-email page on success
       navigate('/verify-email', { state: { email: validation.data.email } });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
-      setErrors({ email: 'Registration failed. Please try again.' });
+      const message =
+        error.response?.data?.message ||
+        'Registration failed. Please try again.';
+      setErrors({ email: message });
+      // Reset reCAPTCHA on error
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -258,6 +278,18 @@ export default function Register() {
                   </Label>
                 </div>
                 {errors.terms && <FieldError>{errors.terms}</FieldError>}
+
+                <div className="flex justify-center py-2">
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={
+                      import.meta.env.VITE_RECAPTCHA_SITE_KEY ||
+                      '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
+                    }
+                    onChange={(token) => setRecaptchaToken(token)}
+                    theme="dark"
+                  />
+                </div>
               </FieldGroup>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
