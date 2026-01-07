@@ -18,7 +18,10 @@ import type { Comment } from '@/lib/types';
 
 interface CommentItemProps {
   comment: Comment;
-  onEdit: (id: string | number, text: string) => Promise<boolean>;
+  onEdit: (
+    id: string | number,
+    text: string
+  ) => Promise<{ success: boolean; status?: string }>;
   onDelete: (id: string | number) => Promise<boolean>;
 }
 
@@ -42,8 +45,8 @@ export function CommentItem({ comment, onEdit, onDelete }: CommentItemProps) {
     }
 
     setIsUpdating(true);
-    const success = await onEdit(comment.id, editText);
-    if (success) {
+    const result = await onEdit(comment.id, editText);
+    if (result.success) {
       setIsEditing(false);
     }
     setIsUpdating(false);

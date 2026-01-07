@@ -129,7 +129,17 @@ export class CommentsService {
     if (comment.userId !== userId) {
       throw new ForbiddenException('You can only edit your own comments');
     }
+
+    const isModerationOn = await this.settingsService.getBool(
+      'comment_moderation',
+      false,
+    );
+
     comment.content = content;
+    if (isModerationOn) {
+      comment.status = CommentStatus.PENDING;
+    }
+
     return this.commentRepository.save(comment);
   }
 

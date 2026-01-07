@@ -90,7 +90,21 @@ export function CommentSection({
           <CommentItem
             key={comment.id}
             comment={comment}
-            onEdit={editComment}
+            onEdit={async (id, text) => {
+              const result = await editComment(id, text);
+              if (result.success && result.status === 'pending') {
+                toast.success(
+                  'Your edit has been submitted for moderation and the comment will reappear once approved.',
+                  {
+                    icon: '🛡️',
+                    duration: 5000,
+                  }
+                );
+              } else if (result.success) {
+                toast.success('Comment updated successfully!');
+              }
+              return result;
+            }}
             onDelete={removeComment}
           />
         ))}

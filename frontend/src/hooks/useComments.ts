@@ -55,25 +55,35 @@ export function useComments(
   const editComment = useCallback(
     async (commentId: string | number, text: string) => {
       try {
-        const response = await updateComment(Number(commentId), text); // Ensure API calls handle conversion if needed
-        if (response.success) {
+        const response = await updateComment(commentId, text);
+        // If the update is successful, the interceptor returns the data part (the updated comment)
+        if (response && (response.id || response.success)) {
+          // Check if the edited comment is now pending moderation
+          const updatedComment = response.comment || response;
+          if (updatedComment.status === 'pending') {
+            // Remove from list as it's no longer public
+            setComments((prev) => prev.filter((c) => c.id !== commentId));
+            return { success: true, status: 'pending' };
+          }
+
           setComments((prev) =>
             prev.map((c) => (c.id === commentId ? { ...c, text } : c))
           );
-          return true;
+          return { success: true, status: 'approved' };
         }
       } catch (err) {
         console.error('Failed to update comment:', err);
       }
-      return false;
+      return { success: false };
     },
     []
   );
 
   const removeComment = useCallback(async (commentId: string | number) => {
     try {
-      const response = await deleteComment(Number(commentId));
-      if (response.success) {
+      const response = await deleteComment(commentId);
+      // If the delete is successful, the interceptor returns the data part
+      if (response && (response.id || response.success)) {
         setComments((prev) => prev.filter((c) => c.id !== commentId));
         return true;
       }
