@@ -24,10 +24,10 @@ export class Store {
   @Column({ nullable: true, type: 'text' })
   description: string;
 
-  @Column({ name: 'logo_url', nullable: true, length: 500 })
+  @Column({ name: 'logo_url', nullable: true, length: 2048 })
   logoUrl: string;
 
-  @Column({ name: 'website_url', nullable: true, length: 500 })
+  @Column({ name: 'website_url', nullable: true, length: 2048 })
   websiteUrl: string;
 
   @Column({

@@ -29,7 +29,7 @@ export class Deal {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ name: 'deal_url', length: 500 })
+  @Column({ name: 'deal_url', length: 2048, nullable: true })
   dealUrl: string;
 
   @Column({
