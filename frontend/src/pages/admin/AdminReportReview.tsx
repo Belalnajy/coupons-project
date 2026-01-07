@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiFlag, FiBox, FiCheck, FiX } from 'react-icons/fi';
+import {
+  FiArrowLeft,
+  FiFlag,
+  FiBox,
+  FiCheck,
+  FiX,
+  FiEye,
+} from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
 import { getAdminReport, reviewReport } from '@/services/api/admin.api'; // Ensure this path is correct
 import { toast } from 'react-hot-toast';
@@ -33,15 +40,15 @@ const AdminReportReview: React.FC = () => {
 
     const isResolve = action === 'resolve';
     const result = await Swal.fire({
-      title: isResolve ? 'Delete Content & Suspend?' : 'Dismiss Report?',
+      title: isResolve ? 'Suspend Both Content & User?' : 'Dismiss Report?',
       text: isResolve
-        ? 'This will remove the content and flag the user.'
+        ? 'This will disable the content and suspend the creator user account.'
         : 'This will mark the report as rejected/reviewed.',
       icon: isResolve ? 'warning' : 'question',
       showCancelButton: true,
       confirmButtonColor: isResolve ? '#d33' : '#333',
       cancelButtonColor: '#3085d6',
-      confirmButtonText: isResolve ? 'Yes, delete it!' : 'Yes, dismiss it',
+      confirmButtonText: isResolve ? 'Yes, suspend both!' : 'Yes, dismiss it',
     });
 
     if (result.isConfirmed) {
@@ -49,7 +56,7 @@ const AdminReportReview: React.FC = () => {
         await reviewReport(id, {
           status: isResolve ? 'resolved' : 'reviewed',
           notes: isResolve
-            ? 'Content removed and user warned'
+            ? 'Content suspended and creator user account suspended'
             : 'Report dismissed',
         });
         toast.success(
@@ -156,29 +163,93 @@ const AdminReportReview: React.FC = () => {
           </div>
         </div>
 
-        {/* Reported Content - Placeholder for generic content display */}
+        {/* Reported Content */}
         <div className="bg-[#333333] rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden p-8">
-          <div className="flex items-start gap-4 mb-8">
-            <div className="p-4 bg-[#49b99f]/10 rounded-2xl">
-              <FiBox className="w-6 h-6 text-[#49b99f]" />
+          <div className="flex items-start justify-between mb-8">
+            <div className="flex items-start gap-4">
+              <div className="p-4 bg-[#49b99f]/10 rounded-2xl">
+                <FiBox className="w-6 h-6 text-[#49b99f]" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-white uppercase tracking-tight mb-1">
+                  Reported Content
+                </h2>
+                <p className="text-light-grey text-sm opacity-60">
+                  {reportData.contentType === 'deal'
+                    ? 'Actual Deal Details'
+                    : reportData.contentType === 'comment'
+                    ? 'Actual Comment Text'
+                    : 'User Information'}
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-black text-white uppercase tracking-tight mb-1">
-                Reported Content ID
-              </h2>
-              <p className="text-light-grey text-sm opacity-60">
-                {reportData.contentId}
-              </p>
-            </div>
+
+            {/* Direct Link to Content */}
+            {(reportData.contentType === 'deal' ||
+              reportData.contentType === 'comment') && (
+              <a
+                href={
+                  reportData.contentType === 'deal'
+                    ? `/deals/${reportData.contentId}`
+                    : `/deals/${reportData.content?.dealId}#comment-${reportData.contentId}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-6 py-3 bg-[#49b99f] hover:bg-[#49b99f]/90 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-[#49b99f]/20 hover:-translate-y-0.5 active:scale-95">
+                <FiEye className="w-4 h-4" />
+                View on Site
+              </a>
+            )}
           </div>
 
           <div className="bg-[#252525] rounded-3xl p-8 border border-white/5 mb-8">
-            <p className="text-white">
-              Content details would be fetched here based on{' '}
-              <code>{reportData.contentType}</code> and ID{' '}
-              <code>{reportData.contentId}</code>.
-            </p>
-            {/* In a real scenario, you'd fetch the specific deal/comment/user details here */}
+            {reportData.content ? (
+              <div className="space-y-4">
+                {reportData.contentType === 'deal' && (
+                  <>
+                    <h3 className="text-xl font-bold text-white">
+                      {reportData.content.title}
+                    </h3>
+                    <p className="text-light-grey leading-relaxed">
+                      {reportData.content.description}
+                    </p>
+                  </>
+                )}
+                {reportData.contentType === 'comment' && (
+                  <>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 rounded-full bg-[#49b99f]/20 flex items-center justify-center text-[#49b99f] font-bold text-xs">
+                        {reportData.content.user?.username?.[0] || 'U'}
+                      </div>
+                      <span className="text-white font-bold text-sm">
+                        {reportData.content.user?.username}
+                      </span>
+                    </div>
+                    <p className="text-light-grey leading-relaxed text-lg italic">
+                      "{reportData.content.content}"
+                    </p>
+                    <p className="text-xs text-light-grey opacity-40 mt-4">
+                      On Deal: {reportData.content.deal?.title}
+                    </p>
+                  </>
+                )}
+                {reportData.contentType === 'user' && (
+                  <>
+                    <p className="text-white font-bold text-lg">
+                      Username: {reportData.content.username}
+                    </p>
+                    <p className="text-light-grey">
+                      Email: {reportData.content.email}
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <p className="text-red-400 font-bold">
+                Could not fetch content details. It might have been deleted or
+                an error occurred.
+              </p>
+            )}
           </div>
         </div>
 
@@ -193,7 +264,7 @@ const AdminReportReview: React.FC = () => {
               onClick={() => handleAction('resolve')}
               className="flex-1 bg-red-500 hover:bg-red-600 text-white font-black uppercase tracking-widest h-16 rounded-2xl gap-3 shadow-xl shadow-red-500/20 border-0 transition-transform hover:-translate-y-1">
               <FiCheck className="w-6 h-6" />
-              Delete Content & Suspend User
+              Suspend Both Content & User
             </Button>
             <Button
               onClick={() => handleAction('dismiss')}
@@ -204,8 +275,8 @@ const AdminReportReview: React.FC = () => {
           </div>
 
           <p className="text-light-grey text-xs font-medium opacity-40">
-            Taking action will remove the reported content and may suspend the
-            user account if multiple violations are detected.
+            Taking action will disable the reported content and suspend the
+            creator user account.
           </p>
         </div>
       </div>

@@ -60,21 +60,24 @@ const AdminReports: React.FC = () => {
 
   const handleReview = async (id: string) => {
     const result = await Swal.fire({
-      title: 'Resolve Report?',
-      text: 'Mark this report as reviewed.',
-      icon: 'question',
+      title: 'Suspend Both Content & User?',
+      text: 'This will disable the reported content and suspend the creator user account.',
+      icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#49b99f',
+      confirmButtonColor: '#d33',
       cancelButtonColor: '#333',
-      confirmButtonText: 'Yes, resolve it!',
+      confirmButtonText: 'Yes, suspend both!',
       background: '#2c2c2c',
       color: '#fff',
     });
 
     if (result.isConfirmed) {
       try {
-        await reviewReport(id, { status: 'reviewed' });
-        toast.success('Report resolved');
+        await reviewReport(id, {
+          status: 'resolved',
+          notes: 'Suspended via quick action',
+        });
+        toast.success('Content and user suspended');
         fetchReports();
       } catch (error) {
         toast.error('Failed to resolve report');
@@ -161,6 +164,9 @@ const AdminReports: React.FC = () => {
                     Type
                   </th>
                   <th className="px-6 py-5 text-xs font-black uppercase tracking-widest text-[#a0a0a0] text-center">
+                    Content
+                  </th>
+                  <th className="px-6 py-5 text-xs font-black uppercase tracking-widest text-[#a0a0a0] text-center">
                     Reason
                   </th>
                   <th className="px-6 py-5 text-xs font-black uppercase tracking-widest text-[#a0a0a0] text-center">
@@ -186,6 +192,15 @@ const AdminReports: React.FC = () => {
                       <td className="px-6 py-6 text-center">
                         <span className="text-white font-black uppercase text-xs">
                           {report.contentType}
+                        </span>
+                      </td>
+                      <td className="px-6 py-6 text-center max-w-[200px]">
+                        <span className="text-white font-bold text-sm line-clamp-2">
+                          {report.contentType === 'deal'
+                            ? report.content?.title || 'Unknown Deal'
+                            : report.contentType === 'comment'
+                            ? report.content?.content || 'Unknown Comment'
+                            : report.content?.username || 'Unknown User'}
                         </span>
                       </td>
                       <td className="px-6 py-6 text-center">
@@ -236,7 +251,7 @@ const AdminReports: React.FC = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-20 text-center">
+                    <td colSpan={7} className="px-6 py-20 text-center">
                       <FiFlag className="w-12 h-12 mx-auto mb-4 text-light-grey opacity-20" />
                       <p className="text-light-grey opacity-40 font-bold uppercase tracking-widest">
                         No reports found

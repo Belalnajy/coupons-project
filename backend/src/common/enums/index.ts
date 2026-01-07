@@ -37,6 +37,7 @@ export enum VoteType {
 export enum CommentStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
+  REJECTED = 'rejected',
 }
 
 export enum StoreStatus {

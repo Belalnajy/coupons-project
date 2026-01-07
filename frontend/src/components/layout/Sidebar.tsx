@@ -8,7 +8,6 @@ import {
   FiPlusCircle,
   FiUser,
   FiThumbsUp,
-  FiBell,
   FiShoppingCart,
   FiUsers,
   FiLayers,
@@ -65,9 +64,7 @@ export function Sidebar({
     { to: '/dashboard/profile', icon: FiUser, label: 'Profile' },
     { to: '/dashboard/deals', icon: FiPackage, label: 'My Deals' },
     { to: '/dashboard/votes', icon: FiThumbsUp, label: 'Votes' },
-    { to: '/dashboard/notifications', icon: FiBell, label: 'Notifications' },
     { to: '/dashboard/submit-deal', icon: FiPlusCircle, label: 'Submit Deal' },
-    { to: '/dashboard/settings', icon: FiSettings, label: 'Settings' },
     { to: '/', icon: FiHome, label: 'Back to Home' },
   ];
 

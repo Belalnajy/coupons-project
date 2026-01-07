@@ -10,6 +10,7 @@ import {
 import { DealsService } from '../deals/deals.service';
 import { CommentsService } from '../comments/comments.service';
 import { UsersService } from '../users/users.service';
+import { DealStatus, CommentStatus } from '../../common/enums';
 
 @Injectable()
 export class ReportsService {
@@ -41,11 +42,13 @@ export class ReportsService {
     status?: ReportStatus;
     contentType?: ReportContentType;
   }) {
-    return this.reportRepository.find({
+    const reports = await this.reportRepository.find({
       where: query,
       relations: ['reporter', 'reviewer'],
       order: { createdAt: 'DESC' },
     });
+
+    return Promise.all(reports.map((report) => this.attachContentInfo(report)));
   }
 
   async findOne(id: string) {
@@ -56,7 +59,32 @@ export class ReportsService {
     if (!report) {
       throw new NotFoundException(`Report with ID "${id}" not found`);
     }
-    return report;
+    return this.attachContentInfo(report);
+  }
+
+  private async attachContentInfo(report: Report) {
+    let content: any = null;
+    try {
+      switch (report.contentType) {
+        case ReportContentType.DEAL:
+          content = await this.dealsService.findOne(report.contentId, true);
+          break;
+        case ReportContentType.COMMENT:
+          const commentRepository =
+            this.reportRepository.manager.getRepository('Comment');
+          content = await commentRepository.findOne({
+            where: { id: report.contentId },
+            relations: ['user', 'deal'],
+          });
+          break;
+        case ReportContentType.USER:
+          content = await this.usersService.findOne(report.contentId);
+          break;
+      }
+    } catch (error) {
+      content = null;
+    }
+    return { ...report, content };
   }
 
   async review(
@@ -72,23 +100,36 @@ export class ReportsService {
 
     if (data.status === ReportStatus.RESOLVED) {
       try {
+        let userId: string;
         switch (report.contentType) {
           case ReportContentType.DEAL:
-            await this.dealsService.adminDelete(report.contentId);
+            userId = report.content.userId;
+            // Update deal status instead of deleting
+            await this.reportRepository.manager
+              .getRepository('Deal')
+              .update(report.contentId, {
+                status: DealStatus.REJECTED,
+                isEnabled: false,
+              });
             break;
           case ReportContentType.COMMENT:
-            await this.commentsService.adminDelete(report.contentId);
+            userId = report.content.userId;
+            // Update comment status instead of deleting
+            await this.reportRepository.manager
+              .getRepository('Comment')
+              .update(report.contentId, {
+                status: CommentStatus.REJECTED,
+              });
             break;
           case ReportContentType.USER:
-            await this.usersService.updateStatus(
-              report.contentId,
-              UserStatus.SUSPENDED,
-            );
+            userId = report.contentId;
             break;
         }
+
+        if (userId) {
+          await this.usersService.updateStatus(userId, UserStatus.SUSPENDED);
+        }
       } catch (error) {
-        // Log error but continue to save report status?
-        // Or throw error? For now, let's allow it to fail if content not found (already handled in services)
         console.error(
           `Failed to take action on report ${id}: ${error.message}`,
         );

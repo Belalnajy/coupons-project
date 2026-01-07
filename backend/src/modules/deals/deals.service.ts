@@ -331,6 +331,9 @@ export class DealsService {
       throw new NotFoundException(`Deal with ID "${id}" not found`);
     }
     deal.isEnabled = !deal.isEnabled;
+    if (deal.isEnabled && deal.status === DealStatus.REJECTED) {
+      deal.status = DealStatus.APPROVED;
+    }
     return this.dealRepository.save(deal);
   }
 
