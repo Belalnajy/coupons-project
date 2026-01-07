@@ -9,6 +9,7 @@ import Coupons from './pages/Coupons';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Maintenance from './pages/Maintenance';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import Overview from './pages/dashboard/Overview';
 import MyDeals from './pages/dashboard/MyDeals';
@@ -39,7 +40,99 @@ import Cookies from './pages/legal/Cookies';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Snowfall from 'react-snowfall';
 import { Toaster } from 'react-hot-toast';
-import { SettingsProvider } from './context/SettingsContext';
+import { SettingsProvider, useSettings } from './context/SettingsContext';
+import { useAuth } from './context/AuthContext';
+
+const AppRoutes = () => {
+  const { settings, loading } = useSettings();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const isMaintenanceMode = settings.maintenance_mode === 'true';
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#1a1a1a] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-[#49b99f]/20 border-t-[#49b99f] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Maintenance Mode Lock */}
+        {isMaintenanceMode && !isAdmin ? (
+          <>
+            <Route path="/signin" element={<Signin />} />
+            <Route path="*" element={<Maintenance />} />
+          </>
+        ) : (
+          <>
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/signin" element={<Signin />} />
+              <Route path="/deals" element={<Deals />} />
+              <Route path="/deals/:id" element={<DealsDetails />} />
+              <Route path="/coupons" element={<Coupons />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/cookies" element={<Cookies />} />
+            </Route>
+
+            {/* Dashboard Routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }>
+              <Route index element={<Overview />} />
+              <Route path="submit-deal" element={<SubmitDeal />} />
+              <Route path="deals" element={<MyDeals />} />
+              <Route path="profile" element={<UserProfile />} />
+              <Route path="votes" element={<Votes />} />
+              <Route path="notifications" element={<Notifications />} />
+              <Route path="settings" element={<UserSettings />} />
+            </Route>
+
+            {/* Admin Routes */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }>
+              <Route index element={<AdminOverview />} />
+              <Route path="voting" element={<AdminVoting />} />
+              <Route path="deals" element={<AdminDeals />} />
+              <Route path="deals/new" element={<AdminDealForm />} />
+              <Route path="deals/:id" element={<AdminDealReview />} />
+              <Route path="comments" element={<AdminComments />} />
+              <Route path="stores" element={<AdminStores />} />
+              <Route path="stores/new" element={<AdminStoreEdit />} />
+              <Route path="stores/edit/:id" element={<AdminStoreEdit />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="users/new" element={<AdminUserEdit />} />
+              <Route path="users/edit/:id" element={<AdminUserEdit />} />
+              <Route path="content" element={<AdminContent />} />
+              <Route path="content/new" element={<AdminBannerForm />} />
+              <Route path="content/edit/:id" element={<AdminBannerForm />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="reports/:id" element={<AdminReportReview />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
+          </>
+        )}
+      </Routes>
+    </BrowserRouter>
+  );
+};
 
 function App() {
   return (
@@ -66,69 +159,7 @@ function App() {
         }}>
         <Snowfall />
       </div>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/signin" element={<Signin />} />
-            <Route path="/deals" element={<Deals />} />
-            <Route path="/deals/:id" element={<DealsDetails />} />
-            <Route path="/coupons" element={<Coupons />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/cookies" element={<Cookies />} />
-          </Route>
-
-          {/* Dashboard Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }>
-            <Route index element={<Overview />} />
-            <Route path="submit-deal" element={<SubmitDeal />} />
-            <Route path="deals" element={<MyDeals />} />
-            <Route path="profile" element={<UserProfile />} />
-            <Route path="votes" element={<Votes />} />
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="settings" element={<UserSettings />} />
-          </Route>
-
-          {/* Admin Routes */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute requireAdmin>
-                <AdminLayout />
-              </ProtectedRoute>
-            }>
-            <Route index element={<AdminOverview />} />
-            <Route path="voting" element={<AdminVoting />} />
-            <Route path="deals" element={<AdminDeals />} />
-            <Route path="deals/new" element={<AdminDealForm />} />
-            <Route path="deals/:id" element={<AdminDealReview />} />
-            <Route path="comments" element={<AdminComments />} />
-            <Route path="stores" element={<AdminStores />} />
-            <Route path="stores/new" element={<AdminStoreEdit />} />
-            <Route path="stores/edit/:id" element={<AdminStoreEdit />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="users/new" element={<AdminUserEdit />} />
-            <Route path="users/edit/:id" element={<AdminUserEdit />} />
-            <Route path="content" element={<AdminContent />} />
-            <Route path="content/new" element={<AdminBannerForm />} />
-            <Route path="content/edit/:id" element={<AdminBannerForm />} />
-            <Route path="reports" element={<AdminReports />} />
-            <Route path="reports/:id" element={<AdminReportReview />} />
-            <Route path="settings" element={<AdminSettings />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <AppRoutes />
     </SettingsProvider>
   );
 }

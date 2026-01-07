@@ -48,11 +48,13 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const fetchSettings = async () => {
     try {
       const data = await getPublicSettings();
-      const mapped = { ...defaultSettings };
-      data.forEach((s: any) => {
-        mapped[s.key as keyof PlatformSettings] = s.value;
-      });
-      setSettings(mapped);
+      if (Array.isArray(data)) {
+        const mapped = { ...defaultSettings };
+        data.forEach((s: any) => {
+          mapped[s.key as keyof PlatformSettings] = s.value;
+        });
+        setSettings(mapped);
+      }
     } catch (error) {
       console.error('Failed to fetch platform settings:', error);
     } finally {

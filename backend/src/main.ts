@@ -17,9 +17,7 @@ async function bootstrap() {
   // Set global prefix
   app.setGlobalPrefix('api');
 
-  // Global Guards
-  const reflector = app.get(Reflector);
-  app.useGlobalGuards(new JwtAuthGuard(reflector), new RolesGuard(reflector));
+  // app.useGlobalGuards(...) is now handled in AppModule via APP_GUARD
 
   // Global Interceptors
   app.useGlobalInterceptors(new TransformInterceptor());
