@@ -4,7 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  BeforeInsert,
+  BeforeUpdate,
 } from 'typeorm';
+import { slugify } from '../../../common/utils/slugify';
 import { StoreStatus } from '../../../common/enums';
 
 @Entity('stores')
@@ -39,4 +42,12 @@ export class Store {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  slugifyName() {
+    if (this.name) {
+      this.slug = slugify(this.name);
+    }
+  }
 }

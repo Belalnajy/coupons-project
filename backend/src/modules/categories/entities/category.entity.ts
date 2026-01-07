@@ -4,7 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  BeforeInsert,
+  BeforeUpdate,
 } from 'typeorm';
+import { slugify } from '../../../common/utils/slugify';
 
 @Entity('categories')
 export class Category {
@@ -31,4 +34,12 @@ export class Category {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
+
+  @BeforeInsert()
+  @BeforeUpdate()
+  slugifyName() {
+    if (this.name) {
+      this.slug = slugify(this.name);
+    }
+  }
 }

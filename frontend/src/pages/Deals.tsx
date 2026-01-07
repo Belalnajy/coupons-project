@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -22,7 +22,10 @@ import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 
 export default function Deals() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get('search') || ''
+  );
   const [deals, setDeals] = useState<Deal[]>([]);
   const [bannersTop, setBannersTop] = useState<any[]>([]);
   const [bannersSidebar, setBannersSidebar] = useState<any[]>([]);
@@ -46,6 +49,14 @@ export default function Deals() {
 
   const debouncedSearch = useDebounce(searchQuery, 300);
   const DEALS_PER_PAGE = 6;
+
+  // Sync search query with URL params
+  useEffect(() => {
+    const query = searchParams.get('search');
+    if (query !== null && query !== searchQuery) {
+      setSearchQuery(query);
+    }
+  }, [searchParams]);
 
   // Fetch banners and categories on mount
   useEffect(() => {

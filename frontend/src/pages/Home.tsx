@@ -66,7 +66,7 @@ export default function Home() {
           getBanners({ placement: 'home_top' }),
           getCategories(),
         ]);
-        setBanners(bannerData || []);
+        setBanners(Array.isArray(bannerData) ? bannerData : []);
         setCategories(catData || []);
       } catch (error) {
         console.error('Failed to fetch initial data:', error);
